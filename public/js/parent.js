@@ -23,5 +23,5 @@ async function route() {
 }
 addEventListener("hashchange", route);
 document.getElementById("refresh").onclick = route;
-document.getElementById("logout").onclick = async () => { await api("/logout", { body: {} }).catch(() => {}); location.href = "/"; };
+document.getElementById("logout").onclick = async () => { await api("/logout", { body: {} }).catch(() => {}); location.href = "/parent-login"; };
 api("/me").then((r) => { if (r.role !== "parent") location.href = "/kid"; else route(); });

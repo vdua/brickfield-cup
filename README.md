@@ -104,7 +104,7 @@ npx wrangler d1 export brickfield-db --remote --output=backup-$(date +%F).sql
 
 ## Project layout
 ```
-public/            static site (index = login, kid.html, parent.html, css/, js/, assets/)
+public/            static site (index = player login, parent-login.html, kid.html, parent.html, css/, js/, assets/)
 functions/api/     Pages Function entry (catch-all /api/*)
 lib/api.js         API: auth, sessions, scoring, badges, parent endpoints
 lib/content.js     19-week roadmap, weekly mission, badges, stadium stages; edit freely

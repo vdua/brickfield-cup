@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Parent sign-in · The Brickfield Cup</title>
+<link rel="icon" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/kid.css">
+</head>
+<body data-role="parent">
+<div class="login">
+  <div class="scene"><div id="scene" data-asset="/assets/login-hero.webp" aria-label="A cricket stadium built from toy bricks"></div></div>
+  <div class="panel">
+    <div class="card">
+      <h1>The Brickfield Cup</h1>
+      <p class="lead">Parent dashboard</p>
+      <p style="margin:0;font-weight:700">Parent PIN</p>
+      <div class="pinbox" id="dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div class="pad" id="pad"></div>
+      <p class="err" id="err" role="alert"></p>
+      <a class="swap" href="/">Back to the player login</a>
+    </div>
+  </div>
+</div>
+<script type="module" src="/js/login.js"></script>
+</body>
+</html>

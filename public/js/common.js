@@ -8,7 +8,7 @@ export async function api(path, opts = {}) {
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
   const data = await r.json().catch(() => ({}));
-  if (r.status === 401 && !opts.noRedirect) { location.href = "/"; throw new Error("Please log in"); }
+  if (r.status === 401 && !opts.noRedirect) { location.href = location.pathname.startsWith("/parent") ? "/parent-login" : "/"; throw new Error("Please log in"); }
   if (!r.ok) throw new Error(data.error || "Something went wrong");
   return data;
 }
