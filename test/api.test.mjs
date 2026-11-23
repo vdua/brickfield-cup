@@ -16,6 +16,22 @@ async function call(who, method, path, body) {
   return { status: r.status, data: await r.json() };
 }
 
+const addDay = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
+// time travel: move every stored date back a day, which is the same as the clock moving forward one day
+const nextDay = () => env.DB.exec(`
+  UPDATE sessions SET started_at = strftime('%Y-%m-%dT%H:%M:%fZ', started_at, '-1 day'), ended_at = CASE WHEN ended_at IS NULL THEN NULL ELSE strftime('%Y-%m-%dT%H:%M:%fZ', ended_at, '-1 day') END;
+  UPDATE week_slots SET day = date(day, '-1 day'); UPDATE daily_bonus SET day = date(day, '-1 day'); UPDATE holidays SET day = date(day, '-1 day');`);
+const answerAll = async (d) => {
+  for (const q of d.questions) await call("kid", "POST", `/api/session/${d.session.id}/answer`, { question_id: q.id, given: q.options ? "0" : "1", time_ms: 9000 });
+  return (await call("kid", "POST", `/api/session/${d.session.id}/finish`, {})).data;
+};
+const playSlot = async (week, slot) => {
+  const s = await call("kid", "POST", "/api/session/start", { week, slot });
+  assert.equal(s.status, 200, `${slot}: ${s.data.error}`);
+  return { start: s.data, fin: await answerAll(s.data) };
+};
+const slotsOf = async (week) => Object.fromEntries((await call("parent", "GET", `/api/parent/plan/${week}`)).data.slots.map((x) => [x.slot, x]));
+
 // answer checker
 assert.ok(isCorrect({ answer: "25/6" }, "4 1/6"));
 assert.ok(isCorrect({ answer: "3.5" }, "3.5 hours"));
@@ -57,10 +73,15 @@ assert.equal(r.streak, 0);
 r = replay([day(1, 6), day(2, 3)], none, "2026-12-03");
 assert.deepEqual([r.streak, r.wicketsLeft, r.nextBonus], [2, 1, 3]);
 
-// state
+// state: nothing is playable until the parent publishes the week
 let st = (await call("kid", "GET", "/api/state")).data;
-assert.equal(st.mission.length, 5);
-console.log("week", st.week, "mission", st.mission.map((m) => m.kind).join(","));
+assert.equal(st.plan.published, false);
+assert.equal(st.plan.slots.length, 7);
+assert.ok(st.plan.slots.every((x) => x.status === "unpublished"));
+assert.equal((await call("kid", "POST", "/api/session/start", { kind: "practice" })).status, 400, "gated kinds need a slot");
+assert.equal((await call("kid", "POST", "/api/session/start", { kind: "practice", slot: "nets1", week: 2 })).status, 403);
+assert.equal((await call("kid", "GET", "/api/parent/plan/2")).status, 403);
+assert.equal((await call("parent", "GET", "/api/parent/plan/20")).status, 400);
 
 // play a diagnostic: answer correctly except 3
 const start = (await call("kid", "POST", "/api/session/start", { kind: "diagnostic", week: 1 })).data;
@@ -83,31 +104,84 @@ assert.equal(fin.session.score, 17);
 assert.ok(fin.newBadges.some((b) => b.code === "first_innings"));
 assert.equal(fin.bonus.runs, 1); // first working day pays 1 run, once a day
 
-// practice + puzzle + revision
-for (const kind of ["practice", "puzzle", "revision", "before", "after"]) {
-  const s = await call("kid", "POST", "/api/session/start", { kind, week: 2 });
-  assert.equal(s.status, 200, kind);
-  for (const q of s.data.questions) await call("kid", "POST", `/api/session/${s.data.session.id}/answer`, { question_id: q.id, given: q.options ? "0" : "1", time_ms: 9000 });
-  const f = (await call("kid", "POST", `/api/session/${s.data.session.id}/finish`, {})).data;
-  console.log(kind, "→", f.session.score, "/", f.session.total);
+// replay is the one ungated extra
+{
+  const s = await call("kid", "POST", "/api/session/start", { kind: "revision", week: 2 });
+  assert.equal(s.status, 200);
+  const f = await answerAll(s.data);
+  assert.equal(f.bonus.runs, 0, "the regularity bonus is once a day");
 }
+
+// publishing week 2: Nets 1 was yesterday (missed), Nets 2 is today, the rest are ahead; Match is in the past so the worksheet below can count
+assert.equal((await call("parent", "POST", "/api/parent/plan/2/publish", { days: { nets1: "bad" } })).status, 400);
+const pub = (await call("parent", "POST", "/api/parent/plan/2/publish", { days: {
+  nets1: addDay(today, -1), nets2: today, nets3: addDay(today, 1), puzzle: addDay(today, 2), toss: addDay(today, 3), match: addDay(today, -1), over: addDay(today, 4) } })).data;
+assert.equal(pub.published, true);
+let sl = await slotsOf(2);
+assert.deepEqual(["missed", "open", "locked", "locked", "locked", "na", "locked"], ["nets1", "nets2", "nets3", "puzzle", "toss", "match", "over"].map((k) => sl[k].status));
+// future slots can never be started, whatever the client says
+for (const slot of ["nets3", "puzzle", "toss", "over"]) assert.equal((await call("kid", "POST", "/api/session/start", { week: 2, slot })).status, 403, slot);
+assert.equal((await call("kid", "POST", "/api/session/start", { week: 2, slot: "match" })).status, 404, "no worksheet yet");
+assert.equal((await call("kid", "POST", "/api/session/start", { kind: "after", week: 2, slot: "nets3" })).status, 403, "the slot decides, not the kind");
+
+// today's slot is played; a second one the same day is refused, even a missed one
+{
+  const a = await playSlot(2, "nets2");
+  assert.equal(a.start.session.slot, "nets2");
+  assert.equal(a.start.questions.length, 4);
+  assert.equal((await call("kid", "POST", "/api/session/start", { week: 2, slot: "nets1" })).status, 403);
+  assert.equal((await call("kid", "POST", "/api/session/start", { week: 2, slot: "nets2" })).status, 409, "already done");
+}
+sl = await slotsOf(2);
+assert.equal(sl.nets2.status, "done"); assert.equal(sl.nets2.late, false);
+
+// tomorrow the missed Nets 1 can be caught up: it counts, but as late
+nextDay();
+sl = await slotsOf(2);
+assert.deepEqual([sl.nets1.status, sl.nets3.status], ["missed", "open"]);
+await playSlot(2, "nets1");
+sl = await slotsOf(2);
+assert.equal(sl.nets1.status, "done"); assert.equal(sl.nets1.late, true);
+assert.ok(!(await call("kid", "GET", "/api/state")).data.badges.find((b) => b.code === "full_match").earned_at, "a late mission spoils the clean week");
+
+// week 1 format: 6 before, 4 practice, 6 puzzle, 6 after (one a day)
+assert.equal((await call("parent", "POST", "/api/parent/plan/1/publish", { days: Object.fromEntries(["nets1", "nets2", "nets3", "puzzle", "toss", "match", "over"].map((k) => [k, addDay(today, -30)])) })).status, 200);
+for (const [slot, n] of [["toss", 6], ["nets1", 4], ["puzzle", 6], ["over", 6]]) {
+  nextDay();
+  assert.equal((await playSlot(1, slot)).start.questions.length, n, `week 1 ${slot}`);
+}
+
+// a clean week earns Full Match: week 4 has Nets Mon-Wed(Wed is a holiday), puzzle, toss, super over; no worksheet
+for (const kind of ["before", "after"]) assert.equal((await call("parent", "POST", "/api/parent/questions", { week: 4, kind, topic: "Patterns", difficulty: 1, prompt: `4 ${kind}?`, answer: "1" })).status, 200);
+nextDay();
+const t0 = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
+assert.equal((await call("parent", "POST", "/api/parent/plan/4/publish", { days: { nets1: t0, nets2: addDay(t0, 1), nets3: addDay(t0, 2), puzzle: addDay(t0, 3), toss: addDay(t0, 4), match: addDay(t0, 4), over: addDay(t0, 5) } })).status, 200);
+assert.equal((await call("parent", "POST", "/api/parent/holidays", { day: addDay(t0, 2), note: "Test holiday" })).status, 200);
+const order = ["nets1", "nets2", null, "puzzle", "toss", "over"]; // null = the holiday: nothing to play
+let gotBadge = false;
+for (const slot of order) {
+  if (slot) {
+    const r = await playSlot(4, slot);
+    if (r.fin.newBadges.some((b) => b.code === "full_match")) gotBadge = true;
+    if (slot !== "over") assert.ok(!gotBadge, "badge only after the last mission");
+  } else {
+    assert.equal((await slotsOf(4)).nets3.status, "skip");
+    assert.equal((await call("kid", "POST", "/api/session/start", { week: 4, slot: "nets3" })).status, 403);
+  }
+  if (slot !== "over") nextDay();
+}
+assert.ok(gotBadge, "Full Match after finishing every playable mission on its own day");
+env.DB.exec("DELETE FROM holidays");
 st = (await call("kid", "GET", "/api/state")).data;
 console.log("totals", st.totals, "streak", st.streak, "stage", st.stadium.stage);
 
-// the bonus is once a day: a second session pays nothing more
-{
-  const x = (await call("kid", "POST", "/api/session/start", { kind: "practice", week: 2 })).data;
-  for (const q of x.questions) await call("kid", "POST", `/api/session/${x.session.id}/answer`, { question_id: q.id, given: q.options ? "0" : "1", time_ms: 9000 });
-  const fx = (await call("kid", "POST", `/api/session/${x.session.id}/finish`, {})).data;
-  assert.equal(fx.bonus.runs, 0);
-}
-// week 1 format: 6 before, 4 practice, 6 puzzle, 6 after
-for (const [kind, n] of [["before", 6], ["practice", 4], ["puzzle", 6], ["after", 6]]) {
-  const s1 = await call("kid", "POST", "/api/session/start", { kind, week: 1 });
-  assert.equal(s1.data.questions.length, n, `week 1 ${kind}`);
-  for (const q of s1.data.questions) await call("kid", "POST", `/api/session/${s1.data.session.id}/answer`, { question_id: q.id, given: q.options ? "0" : "1", time_ms: 9000 });
-  await call("kid", "POST", `/api/session/${s1.data.session.id}/finish`, {});
-}
+// a day allows as many missions as were scheduled on it: two on one day, a third (a missed one) is refused
+nextDay();
+assert.equal((await call("parent", "POST", "/api/parent/plan/6/publish", { days: { nets1: t0, nets2: t0, nets3: addDay(t0, -1), puzzle: addDay(t0, 2), toss: addDay(t0, 3), match: addDay(t0, 3), over: addDay(t0, 4) } })).status, 200);
+await playSlot(6, "nets1");
+await playSlot(6, "nets2");
+assert.equal((await call("kid", "POST", "/api/session/start", { week: 6, slot: "nets3" })).status, 403);
+env.DB.exec("DELETE FROM week_slots WHERE week = 6");
 
 // rewards: request one we can't afford
 const big = st.rewards.find((r) => r.cost > st.totals.wallet);
@@ -116,11 +190,12 @@ assert.equal((await call("kid", "POST", `/api/rewards/${big.id}/request`)).statu
 // parent
 const ov = (await call("parent", "GET", "/api/parent/overview")).data;
 assert.equal(ov.tracker.length, 19);
-assert.equal(ov.nextWeek.week, ov.week + 1);
-assert.equal(ov.totals.bonus, 1);
+assert.equal(ov.weekMax.week, ov.week);
+assert.ok(ov.totals.bonus >= 1);
 { // week 2 has practice/before/after loaded, so its maximum is a positive total with the 6-day bonus
   const w2 = (await call("parent", "GET", "/api/parent/overview")).data;
-  assert.ok(w2.nextWeek.total.max >= w2.nextWeek.total.min);
+  assert.ok(w2.weekMax.total.max > 0 && w2.weekMax.bonus.max >= w2.weekMax.bonus.banked);
+  assert.ok(w2.weekMax.parts.every((p) => p.max >= 0 && !("min" in p)));
 }
 assert.ok(ov.tracker[0].before.total === 6);
 console.log("week1 tracker", ov.tracker[0], "topics", ov.topics.length, "daily", ov.daily.slice(-1)[0]);
@@ -136,7 +211,8 @@ assert.equal(imp.imported, 1);
 assert.equal((await call("parent", "POST", "/api/parent/messages", { body: "Proud of you, champ!" })).status, 200);
 assert.equal((await call("parent", "POST", "/api/parent/settings", { player_name: "Champ", week_override: "2" })).status, 200);
 st = (await call("kid", "GET", "/api/state")).data;
-assert.equal(st.player, "Champ"); assert.equal(st.week, 2); assert.equal(st.message.body, "Proud of you, champ!");
+assert.equal(st.player, "Champ"); assert.equal(st.week, 2);
+assert.equal(st.plan.published, true); assert.equal(st.plan.slots.find((x) => x.slot === "nets1").status, "done"); assert.equal(st.message.body, "Proud of you, champ!");
 assert.equal((await call("kid", "POST", `/api/messages/${st.message.id}/react`, { reaction: "high-five" })).status, 200);
 const cheap = (await call("parent", "GET", "/api/parent/rewards")).data[0];
 await call("parent", "POST", "/api/parent/rewards", { title: "Ice cream", cost: 1 });
@@ -172,17 +248,28 @@ assert.equal(afterRe.runs - before.runs, re.runs - sub.runs, "repeat replaces th
 assert.equal(afterRe.sessions, before.sessions);
 const pd = (await call("parent", "GET", `/api/parent/sessions/${sub.session_id}`)).data;
 assert.equal(pd.session.source, "paper"); assert.equal(pd.attempts.filter((a) => a.skipped).length, 1);
+// the Match is a slot: a week-5 sheet whose Match is still ahead can't be handed in, and a week-3 sheet is played on screen today
+const sheet = (week) => ({ title: `W${week}`, set_date: t0, week, questions: [{ q: "2+2?", a: "4", t: "Add", d: 1 }, { q: "Pick even", a: "1", o: ["3", "4", "5"], t: "Parity", d: 2 }, { q: "10-3?", a: "7", t: "Sub", d: 1 }] });
+const w5 = (await call("parent", "POST", "/api/parent/worksheets", sheet(5))).data;
+await call("parent", "POST", "/api/parent/plan/5/publish", { days: { match: addDay(t0, 2) } });
+assert.equal((await call("kid", "POST", `/api/worksheets/${w5.id}/submit`, { minutes: 5, answers: {} })).status, 403);
+assert.equal((await call("kid", "POST", "/api/session/start", { week: 5, slot: "match" })).status, 403);
+const w3 = (await call("parent", "POST", "/api/parent/worksheets", sheet(3))).data;
+await call("parent", "POST", "/api/parent/plan/3/publish", { days: { match: t0 } });
 // on-screen play of a worksheet: unanswered questions become skipped rows at finish
-const ws2 = (await call("kid", "POST", "/api/session/start", { kind: "worksheet", worksheet_id: up.data.id })).data;
-assert.equal(ws2.questions.length, 3);
+const ws2 = (await call("kid", "POST", "/api/session/start", { week: 3, slot: "match" })).data;
+assert.equal(ws2.questions.length, 3); assert.equal(ws2.session.slot, "match");
 await call("kid", "POST", `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[0].id, given: "4", time_ms: 5000 });
 await call("kid", "POST", `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[1].id, given: "", time_ms: 1000 });
 await call("kid", "POST", `/api/session/${ws2.session.id}/finish`, {});
 const d2 = (await call("parent", "GET", `/api/parent/sessions/${ws2.session.id}`)).data;
 assert.equal(d2.attempts.length, 3); assert.equal(d2.attempts.filter((a) => a.skipped).length, 2);
+assert.equal((await slotsOf(3)).match.status, "done");
+assert.equal((await slotsOf(2)).match.status, "done"); assert.equal((await slotsOf(2)).match.late, true);
 const daily = (await call("parent", "GET", "/api/parent/daily?days=7")).data;
 assert.ok(daily.length && daily.at(-1).paper_sessions >= 1 && daily.at(-1).minutes >= 12 && daily.at(-1).skipped === 2);
 assert.equal((await call("parent", "DELETE", `/api/parent/worksheets/${up.data.id}`)).status, 200);
+await call("parent", "DELETE", `/api/parent/worksheets/${w5.id}`); await call("parent", "DELETE", `/api/parent/worksheets/${w3.id}`);
 assert.equal((await call("kid", "GET", "/api/worksheets")).data.length, 0);
 // parent guides: taught flag
 assert.equal((await call("kid", "GET", "/api/parent/guides/status")).status, 403);

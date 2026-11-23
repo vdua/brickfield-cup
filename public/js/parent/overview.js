@@ -2,17 +2,16 @@ import { api, esc } from "/js/common.js";
 import { renderGuides } from "./guides.js";
 import { main, MISTAKE, MCOL, ctx, pct, score, level, renderTabs } from "./state.js";
 
-const span = (min, max) => (min === max ? `${max}` : `${min}–${max}`);
-function nextWeekCard(n) {
+function weekMaxCard(n) {
   if (!n) return "";
-  if (!n.hasQuestions) return `<section class="card"><h2>Next week's maximum</h2><p class="sub">Week ${n.week} (${esc(n.topic)}) has no questions loaded yet, so there is nothing to total. Add its questions to see the maximum runs.</p></section>`;
-  return `<section class="card"><h2>Next week's maximum: up to ${n.total.max} runs</h2>
-    <p class="sub">Week ${n.week}, ${esc(n.topic)}. If every answer is right. Practice and puzzle questions are drawn at random, so a range means the draw changes the total. Use it to set reward prices.</p>
+  if (!n.hasQuestions) return `<section class="card"><h2>This week's maximum</h2><p class="sub">Week ${n.week} (${esc(n.topic)}) has no questions loaded yet, so there is nothing to total. Add its questions to see the maximum runs.</p></section>`;
+  return `<section class="card"><h2>This week's maximum: up to ${n.total.max} runs</h2>
+    <p class="sub">Week ${n.week}, ${esc(n.topic)}. Each part runs from 0 to its maximum (every answer right, the hardest questions drawn). Missed missions stay in because he can still catch them up for runs; rest days and holidays are left out. Earned so far this week: ${n.earned} runs. Use it to set reward prices.</p>
     <table><thead><tr><th>Part</th><th class="num">Questions</th><th class="num">Runs</th></tr></thead><tbody>
-    ${n.parts.map((p) => `<tr><td>${esc(p.label)}</td><td class="num">${p.n}</td><td class="num">${span(p.min, p.max)}</td></tr>`).join("")}
-    <tr><td>Regularity bonus (${n.bonus.days} working days)</td><td class="num"></td><td class="num">${span(n.bonus.min, n.bonus.max)}</td></tr>
-    <tr><td><b>Total</b></td><td class="num"></td><td class="num"><b>${span(n.total.min, n.total.max)}</b></td></tr></tbody></table>
-    <p class="sub" style="margin-top:8px">The bonus is the low figure if his streak starts fresh and the high figure if it is already at 6. Replay sessions are not counted.</p></section>`;
+    ${n.parts.map((p) => `<tr><td>${esc(p.label)}</td><td class="num">${p.n}</td><td class="num">0–${p.max}</td></tr>`).join("")}
+    <tr><td>Regularity bonus (${n.bonus.days} working days)</td><td class="num"></td><td class="num">${n.bonus.banked}–${n.bonus.max}</td></tr>
+    <tr><td><b>Total</b></td><td class="num"></td><td class="num"><b>0–${n.total.max}</b></td></tr></tbody></table>
+    <p class="sub" style="margin-top:8px">The bonus shows what is banked so far up to what he can reach by playing every remaining working day, continuing his current streak (capped at 6 a day). Replay sessions are not counted.</p></section>`;
 }
 
 // ---------------- overview ----------------
@@ -46,7 +45,7 @@ export async function overview() {
     <div class="kpi ${ctx.pending ? "alert" : ""}"><small>Reward requests</small><b>${ctx.pending}</b><em>${ctx.pending ? '<a href="#family">Review now</a>' : "none waiting"}</em></div>
   </div>
 
-  ${nextWeekCard(ctx.OV.nextWeek)}
+  ${weekMaxCard(ctx.OV.weekMax)}
 
   <div class="grid2">
     <section class="card">
