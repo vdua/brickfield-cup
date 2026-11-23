@@ -15,13 +15,13 @@ CREATE TABLE IF NOT EXISTS questions (
   options    TEXT,                                -- JSON array for multiple choice, else NULL
   method     TEXT,
   active     INTEGER NOT NULL DEFAULT 1,
-  worksheet_id INTEGER,                           -- set when the question belongs to a daily worksheet
+  worksheet_id INTEGER,                           -- set when the question belongs to a Sunday worksheet
   created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_q_kind_week ON questions(kind, week, active);
 CREATE INDEX IF NOT EXISTS idx_q_worksheet ON questions(worksheet_id);
 
--- A daily worksheet: a set of questions (ordered by question id) plus an optional printable PDF with an OMR sheet.
+-- A Sunday worksheet (one per week): a set of questions (ordered by question id) plus an optional printable PDF with an OMR sheet.
 CREATE TABLE IF NOT EXISTS worksheets (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   title      TEXT    NOT NULL,
