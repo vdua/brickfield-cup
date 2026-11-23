@@ -44,8 +44,62 @@ await call("parent", "POST", "/api/parent/settings", { rest_days: "" }); // no w
   assert.ok(!(await missions()).some((x) => x.slot === "over"), "beyond the 7-day window");
   await pub7({ nets1: addDay(t0, -3) });
   assert.equal((await missions()).find((x) => x.slot === "nets1").status, "missed");
+  // the parent sees what is still owed from other weeks while planning another one
+  const other = (await call("parent", "GET", "/api/parent/plan/8")).data;
+  assert.deepEqual(other.owed.map((x) => [x.week, x.slot, x.status]), [[7, "nets1", "missed"]]);
+  assert.equal((await call("parent", "GET", "/api/parent/plan/7")).data.owed.length, 0, "a week's own missed missions are in its list, not repeated");
+  assert.deepEqual(other.others.map((x) => [x.week, x.slot]), [[7, "nets1"]], "missed ones are listed too");
+  // a mission of another week dated inside this week's dates shows up under it, whether or not it is missed
+  const w8 = (await call("parent", "GET", "/api/parent/plan/8")).data;
+  await call("parent", "POST", "/api/parent/plan/12/publish", { days: { toss: w8.slots[0].day, match: w8.slots[0].day, over: w8.slots[0].day } });
+  const w8b = (await call("parent", "GET", "/api/parent/plan/8")).data;
+  assert.ok(["match", "over"].every((k) => w8b.others.some((x) => x.week === 12 && x.slot === k)), "week 12's Match and Super over appear in week 8's dates");
+  await call("parent", "DELETE", "/api/parent/plan/12");
+  await pub7({ nets1: addDay(t0, 1) }); // rescheduled: no longer owed
+  assert.equal((await call("parent", "GET", "/api/parent/plan/8")).data.owed.length, 0);
   assert.equal(await call("parent", "DELETE", "/api/parent/plan/7").then((r) => r.status), 200);
   assert.equal((await missions()).length, 0, "unpublished weeks show nothing");
+}
+
+// parent calendar: missions by date across plan weeks, why a day is off, and what is owed
+{
+  const far = addDay(t0, 300);
+  await call("parent", "POST", "/api/parent/plan/9/publish", { days: { nets1: far, nets2: addDay(far, 1), nets3: addDay(far, 2), puzzle: addDay(far, 3), toss: addDay(far, 5), match: addDay(far, 5), over: addDay(far, 6) } });
+  await call("parent", "POST", "/api/parent/plan/10/publish", { days: { nets1: addDay(far, 1) } }); // week 10's Nets 1 lands on a day week 9 also uses
+  const c = (await call("parent", "GET", `/api/parent/calendar?from=${far}&days=7`)).data;
+  assert.equal(c.days.length, 7);
+  assert.deepEqual(c.days[1].missions.map((x) => [x.week, x.slot]), [[9, "nets2"], [10, "nets1"]], "missions of two plan weeks on one date");
+  assert.equal(c.days[0].off, null);
+  assert.equal(c.days[4].off, "nothing scheduled", "a day with no mission is not a working day");
+  assert.equal((await call("parent", "POST", "/api/parent/holidays", { day: far, note: "Exam" })).status, 200);
+  assert.equal((await call("parent", "GET", `/api/parent/calendar?from=${far}&days=7`)).data.days[0].off, "holiday: Exam");
+  await call("parent", "DELETE", `/api/parent/holidays/${far}`);
+  await call("parent", "DELETE", "/api/parent/plan/9"); await call("parent", "DELETE", "/api/parent/plan/10");
+  assert.ok(Array.isArray((await call("parent", "GET", "/api/parent/calendar")).data.owed), "default range is this week on");
+}
+
+// retiring leaves the innings unfinished; starting again resumes it with only the balls not yet played
+{
+  await call("parent", "POST", "/api/parent/plan/11/publish", { days: { nets1: t0 } });
+  const first = await call("kid", "POST", "/api/session/start", { week: 11, slot: "nets1" });
+  assert.equal(first.status, 200);
+  const total = first.data.questions.length;
+  const q0 = first.data.questions[0];
+  assert.equal((await call("kid", "POST", `/api/session/${first.data.session.id}/answer`, { question_id: q0.id, given: "1", time_ms: 1000 })).status, 200); // one ball, then retire: no finish call
+  const slot = async () => (await call("parent", "GET", "/api/parent/plan/11")).data.slots.find((x) => x.slot === "nets1");
+  assert.equal((await slot()).status, "open", "a retired innings does not finish the mission");
+  const again = await call("kid", "POST", "/api/session/start", { week: 11, slot: "nets1" });
+  assert.equal(again.status, 200);
+  assert.equal(again.data.session.id, first.data.session.id, "the same innings carries on");
+  assert.equal(again.data.prior.length, 1);
+  assert.deepEqual(again.data.questions.map((q) => q.id), first.data.questions.slice(1).map((q) => q.id), "only the balls not yet played");
+  assert.equal((await call("kid", "POST", `/api/session/${first.data.session.id}/answer`, { question_id: q0.id, given: "2", time_ms: 1000 })).status, 409, "a marked answer cannot be changed");
+  for (const q of again.data.questions) await call("kid", "POST", `/api/session/${again.data.session.id}/answer`, { question_id: q.id, given: "1", time_ms: 1000 });
+  const fin = (await call("kid", "POST", `/api/session/${again.data.session.id}/finish`, {})).data;
+  assert.equal(fin.session.total, total, "the finished innings covers every ball");
+  assert.equal((await slot()).status, "done");
+  assert.equal((await call("kid", "POST", "/api/session/start", { week: 11, slot: "nets1" })).status, 409, "a finished mission is final");
+  await call("parent", "DELETE", "/api/parent/plan/11");
 }
 
 // working days: only a day with a playable mission counts. Toss (before-check) has no questions in week 19, so its day does not.

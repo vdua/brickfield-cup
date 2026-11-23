@@ -11,17 +11,23 @@ export async function play(kind, slot = "", week = 0) {
   try { d = await api("/session/start", { body: { kind, slot, week } }); }
   catch (e) { toast(e.message, "error"); location.hash = "home"; return; }
   if (my !== ctx.nav) return;
-  ctx.I = { id: d.session.id, kind: d.session.kind, qs: d.questions, i: 0, res: [], runs: 0, wk: 0, away: 0, awayCount: 0, hiddenAt: null, t0: Date.now(), checked: false, timer: null };
+  const prior = d.prior || []; // balls already played in a retired innings are final
+  ctx.I = { id: d.session.id, kind: d.session.kind, qs: d.questions, prior, i: 0, res: [], runs: prior.reduce((a, r) => a + (r.correct ? r.runs : 0), 0), wk: prior.filter((r) => !r.correct).length, away: 0, awayCount: 0, hiddenAt: null, t0: Date.now(), checked: false, timer: null };
   if (!ctx.S) { try { ctx.S = await api("/state"); renderBar(); } catch (e) {} }
+  if (!d.questions.length) return finish(false); // every ball was already played, only the finish was missed
+  if (prior.length) toast(`Welcome back. ${prior.length} ball${prior.length === 1 ? "" : "s"} already played, ${d.questions.length} to go.`, "ok");
   ball();
 }
 
+const dot = (r, label) => (r.correct ? `<i class="r${r.runs}">${r.runs}</i>` : `<i class="w">W</i>`).replace("<i", `<i title="${label}"`);
 export function ballsHtml() {
-  return ctx.I.qs.map((q, i) => {
+  const done = ctx.I.prior.map((r, i) => dot(r, `Ball ${i + 1}`));
+  const rest = ctx.I.qs.map((q, i) => {
     const r = ctx.I.res[i];
-    if (!r) return `<i class="${i === ctx.I.i ? "now" : ""}">${i + 1}</i>`;
-    return r.correct ? `<i class="r${r.runs}">${r.runs}</i>` : `<i class="w">W</i>`;
-  }).join("");
+    if (!r) return `<i class="${i === ctx.I.i ? "now" : ""}">${ctx.I.prior.length + i + 1}</i>`;
+    return dot(r, `Ball ${ctx.I.prior.length + i + 1}`);
+  });
+  return [...done, ...rest].join("");
 }
 
 export function ball() {
@@ -36,7 +42,7 @@ export function ball() {
     </div>
     <form class="qcard" id="qf" autocomplete="off">
       <span class="clock" id="clock">0:00</span>
-      <div class="qmeta"><span class="chip">Ball ${ctx.I.i + 1} of ${ctx.I.qs.length}</span><span class="chip">${esc(q.topic)}</span>
+      <div class="qmeta"><span class="chip">Ball ${ctx.I.prior.length + ctx.I.i + 1} of ${ctx.I.prior.length + ctx.I.qs.length}</span><span class="chip">${esc(q.topic)}</span>
         <span class="chip pace${q.difficulty}">${pace[0]} · ${pace[1]}</span></div>
       <p class="qtext">${esc(q.prompt)}</p>
       ${q.options
@@ -131,11 +137,19 @@ export function advance() {
 export function confirmQuit() {
   const o = document.createElement("div");
   o.className = "overlay";
-  o.innerHTML = `<div class="result"><h2>Retire from this innings?</h2><p>Balls you've already faced still count.</p>
+  o.innerHTML = `<div class="result"><h2>Retire from this innings?</h2><p>The balls you've played stay marked and can't be changed. The mission stays open, and next time you only face the balls you haven't played.</p>
     <div class="why"><button class="brick green" type="button" id="stay">Keep batting</button><button class="brick ghost" type="button" id="leave">Retire</button></div></div>`;
   document.body.appendChild(o);
   o.querySelector("#stay").onclick = () => o.remove();
-  o.querySelector("#leave").onclick = () => { o.remove(); logEvent("session_quit", `after ${ctx.I.res.filter(Boolean).length} balls`, ctx.I.id); finish(true); };
+  o.querySelector("#leave").onclick = () => { o.remove(); logEvent("session_quit", `after ${ctx.I.res.filter(Boolean).length} balls`, ctx.I.id); retire(); };
+}
+
+// Retiring leaves the innings unfinished: the mission is not done. Starting it again resumes with the balls not yet played.
+function retire() {
+  clearInterval(ctx.I.timer);
+  ctx.I = null;
+  toast("Retired. Start the mission again to face the remaining balls.", "ok");
+  location.hash = "home";
 }
 
 export async function finish(quit) {
@@ -145,8 +159,9 @@ export async function finish(quit) {
   let f;
   try { f = await api(`/session/${ctx.I.id}/finish`, { body: { away_s: Math.round(ctx.I.away), away_count: ctx.I.awayCount } }); }
   catch (e) { toast(e.message, "error"); location.hash = "home"; return; }
-  const s = f.session, faced = ctx.I.res.filter(Boolean).length;
-  const best = Math.max(0, ...ctx.I.res.filter(Boolean).map((r) => r.runs));
+  const played = [...ctx.I.prior, ...ctx.I.res.filter(Boolean)];
+  const s = f.session, faced = played.length;
+  const best = Math.max(0, ...played.map((r) => (r.correct ? r.runs : 0)));
   const stageUp = f.stageAfter > f.stageBefore;
   const kind = ctx.I.kind;
   ctx.I = null;

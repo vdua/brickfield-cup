@@ -2,7 +2,7 @@
 export const main = document.getElementById("main");
 export const tabs = document.getElementById("tabs");
 export const ctx = { OV: null, pending: 0 }; // OV: cached /api/parent/overview, pending: reward requests waiting
-export const TABS = [["overview", "Overview"], ["plan", "Week plan"], ["activity", "Activity"], ["sessions", "Sessions"], ["errors", "Error notebook"], ["questions", "Question bank"], ["family", "Messages & rewards"], ["settings", "Settings"]];
+export const TABS = [["overview", "Overview"], ["plan", "Week plan"], ["calendar", "Calendar"], ["activity", "Activity"], ["sessions", "Sessions"], ["errors", "Error notebook"], ["questions", "Question bank"], ["family", "Messages & rewards"], ["settings", "Settings"]];
 export const KIND = { diagnostic: "Diagnostic", before: "Before-check", after: "After-check", practice: "Practice", puzzle: "Puzzles", worksheet: "Worksheet", revision: "Replay (mistakes)", mock: "Mock" };
 export const MISTAKE = { careless: "Silly slip", method: "Didn't know how", misread: "Misread", guess: "Guessed", untagged: "Not tagged" };
 export const MCOL = { careless: "#f08c00", method: "#1c7ed6", misread: "#e03131", guess: "#7048e8", untagged: "#ced4da" };
