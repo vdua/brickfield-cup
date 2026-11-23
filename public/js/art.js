@@ -73,7 +73,7 @@ export function coachSVG(mood = "happy") {
 
 // Badge medallion (brick-shaped, with studs).
 const GLYPH = { first_innings: "1st", fifty: "50", perfect_over: "6/6", clean_sheet: "0W", streak3: "3d", streak7: "7d", streak14: "14d",
-  big_gain: "+2", topic_master: "5/5", comeback: "↺", all_rounder: "★", early_bird: "☀", honest_review: "✓" };
+  big_gain: "+2", topic_master: "6/6", comeback: "↺", all_rounder: "★", early_bird: "☀", honest_review: "DRS" };
 export function badgeSVG(b, earned) {
   const c = earned ? b.color : "#adb5bd";
   return `<svg viewBox="0 0 120 110" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
