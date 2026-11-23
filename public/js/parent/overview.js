@@ -1,4 +1,5 @@
 import { api, esc } from "/js/common.js";
+import { renderGuides } from "./guides.js";
 import { main, MISTAKE, MCOL, ctx, pct, score, level, renderTabs } from "./state.js";
 
 const span = (min, max) => (min === max ? `${max}` : `${min}–${max}`);
@@ -35,6 +36,7 @@ export async function overview() {
 
   main.innerHTML = `
   <section><p class="sub" style="margin:0 0 4px;color:var(--muted)">Week ${w} of 19 · ${esc(row.topic)} · ${esc(row.phase)} phase</p><p class="lead">${lead}</p></section>
+  <div id="guides"></div>
   <div class="kpis">
     <div class="kpi"><small>Total runs</small><b>${ctx.OV.totals.runs}</b><em>${ctx.OV.stage}</em></div>
     <div class="kpi"><small>Streak</small><b>${ctx.OV.streak} d</b><em>days in a row</em></div>
@@ -91,6 +93,7 @@ export async function overview() {
     </section>
   </div>`;
   drawDaily(ctx.OV.daily, Number(s.daily_goal_min || 30));
+  renderGuides(document.getElementById("guides")).catch(() => {});
 }
 
 function drawDaily(days, goal) {

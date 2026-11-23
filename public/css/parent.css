@@ -80,3 +80,14 @@ details summary { cursor: pointer; font-weight: 600; min-height: 32px; }
   .stackt td:empty { display: none; }
 }
 @media print { header.top, .filters, .btn { display: none !important; } body { background: #fff; } .card { border: 0; } }
+
+/* Guides to teach */
+details.guide { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: #fff; }
+details.guide > summary, details.guide-done > summary { cursor: pointer; padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+details.guide .gt { flex: 1 1 200px; }
+details.guide[open] > summary { border-bottom: 1px solid var(--line); }
+details.guide-done { margin-top: 12px; } details.guide-done > summary { font-weight: 600; color: var(--muted); padding-left: 0; }
+.gbody { padding: 4px 16px 14px; max-width: 70ch; line-height: 1.5; }
+.gbody h3 { margin: 18px 0 4px; font-size: 17px; } .gbody h4 { margin: 14px 0 2px; font-size: 15px; }
+.gbody ul, .gbody ol { padding-left: 22px; margin: 6px 0; } .gbody li { margin: 3px 0; }
+.gbody code { background: #edf0f5; padding: 1px 5px; border-radius: 5px; font-size: 90%; }

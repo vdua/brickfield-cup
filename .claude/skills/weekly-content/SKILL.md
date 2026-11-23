@@ -53,14 +53,30 @@ Each concept card is short and parent-readable:
 
 ## Output (drafts only, never straight into the bank)
 - `data/drafts/week-NN-questions.json`: array using the short keys `w,k,t,d,q,a,o,m` plus `c` (concept id). The `c` field is ignored by the app until a concept column exists.
-- `data/drafts/week-NN-guide.json`:
-  ```json
-  { "week": 2, "topic": "...", "concepts": [ {id, name, summary, cue, trap, example} ],
-    "saturday_script": ["2-3 worked examples for the parent to teach, then 8-10 guided practice prompts"],
-    "book": { "title": "", "chapter": "" }, "free_help": [ { "title": "", "url": "", "note": "" } ],
-    "parent_notes": "what to watch for this week" }
+- The parent guide is **not** a draft. Write it straight into the app as `public/guides/week-NN.md` and add its entry to `public/guides/index.json` (format in `docs/guides.md`), so the parent dashboard shows it under "Guides to teach" and the parent can edit the markdown by hand. Use this shape, with these exact headings:
+  ```markdown
+  ---
+  week: 2
+  created: 2026-11-30
+  book: Title (only if the user gave it)
+  chapter: Chapter (only if the user gave it)
+  ---
+  # Week 2: <topic>
+  ## This week
+  ## Concepts
+  ### <concept name>
+  - **Idea:** ...      (summary)
+  - **Ask:** ...       (cue: the question the parent asks)
+  - **Trap:** ...      (the typical mistake)
+  - **Example:** ...   (one worked question, 2-4 steps, answer in bold)
+  ## Saturday script
+  ### Worked examples (2–3, with him)
+  ### Guided practice (he does these, you check)   <- 8-10 prompts, answer in brackets, verified in Node
+  ## Watch for
+  ## Book and links      <- only URLs the user supplied or you confirmed load
   ```
-Then print a short summary: counts per kind, concepts, flagged doubts, and what the parent must check.
+- The `index.json` entry is `{ "week": N, "topic": "...", "due": "YYYY-MM-DD", "file": "week-NN.md" }`. **`due` = the creation date + 7 days** unless the user gives a date (when batch-creating several weeks, ask for the dates so they don't all fall due together). Keep entries sorted by week. Never reuse a week's entry; update it in place.
+Then print a short summary: counts per kind, concepts, the guide's due date, flagged doubts, and what the parent must check.
 
 ## After the parent approves
-Append the questions to `data/questions.json`, run `npm run seed:build` and `npm test`, and delete the drafts. Do not edit `seed.sql` by hand. Per `AGENTS.md`, work on a branch and raise a PR; never commit to `main`.
+Append the approved questions to `data/questions.json`, run `npm run seed:build` and `npm test`, and delete the question drafts. The guide is already in `public/guides/`; commit it with the PR. Do not edit `seed.sql` by hand. Per `AGENTS.md`, work on a branch and raise a PR; never commit to `main`.

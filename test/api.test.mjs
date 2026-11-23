@@ -184,4 +184,16 @@ const daily = (await call("parent", "GET", "/api/parent/daily?days=7")).data;
 assert.ok(daily.length && daily.at(-1).paper_sessions >= 1 && daily.at(-1).minutes >= 12 && daily.at(-1).skipped === 2);
 assert.equal((await call("parent", "DELETE", `/api/parent/worksheets/${up.data.id}`)).status, 200);
 assert.equal((await call("kid", "GET", "/api/worksheets")).data.length, 0);
+// parent guides: taught flag
+assert.equal((await call("kid", "GET", "/api/parent/guides/status")).status, 403);
+assert.deepEqual((await call("parent", "GET", "/api/parent/guides/status")).data, []);
+assert.equal((await call("parent", "POST", "/api/parent/guides/0/taught", {})).status, 400);
+assert.equal((await call("parent", "POST", "/api/parent/guides/20/taught", {})).status, 400);
+const gt = (await call("parent", "POST", "/api/parent/guides/1/taught", {})).data;
+assert.equal(gt.week, 1); assert.ok(gt.taught_at);
+assert.equal((await call("parent", "POST", "/api/parent/guides/1/taught", {})).status, 200); // repeat is harmless
+const gs = (await call("parent", "GET", "/api/parent/guides/status")).data;
+assert.equal(gs.length, 1); assert.equal(gs[0].week, 1);
+assert.equal((await call("parent", "POST", "/api/parent/guides/1/taught", { taught: false })).data.taught_at, null);
+assert.deepEqual((await call("parent", "GET", "/api/parent/guides/status")).data, []);
 console.log("ALL API TESTS PASSED", cheap.title);
