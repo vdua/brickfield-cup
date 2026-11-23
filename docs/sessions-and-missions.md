@@ -13,7 +13,7 @@ Weekly format (30 questions a week, from `weekly-content`): 6 `before` + 12 `pra
 | `practice` | Nets: Mon, Tue, Wed practice (4 questions per session) | 4 random from the week, preferring ones he hasn't got right; tops up from earlier weeks and week 0 |
 | `puzzle` | Thursday scored puzzle day (6 questions) | 6: this week's first, then week-0 puzzles; preferring ones he hasn't got right |
 | `after` | Sunday check after teaching; gain vs `before` earns an improvement badge | All `after` questions for the week (6) |
-| `revision` | "Replay": re-serves 5 questions he got wrong and hasn't since got right. Not a stored kind | Wrong-then-unfixed attempts, topped up from practice |
+| `revision` | "Replay": re-serves up to 5 questions he got wrong and hasn't since got right. Not a stored kind | Wrong-then-unfixed attempts only, up to 5 (no top-up) |
 | `diagnostic` | The original 20-question baseline. Still startable through the API but no longer a mission | All `diagnostic` questions, in id order |
 | `mock` | Full mock (weeks 6, 12, 16, 19; past papers 17-18) | All `mock` questions for the week; with none, 20 random from the other kinds |
 | `worksheet` | Saturday Match (paper or on-screen worksheet) | Questions attached to a worksheet, see [worksheets.md](worksheets.md) |
@@ -29,7 +29,7 @@ Code: `lib/api/slots.js` (plan, statuses, rules), `lib/api/kid-state.js` (what t
 | Match | `worksheet` (the week's worksheet, on screen or by paper submit) | Saturday |
 | Super over | `after` | Sunday |
 
-Replay (`revision`) is an optional extra, not a slot, and can be played any day.
+Replay (`revision`) is an optional extra, not a slot, and can be played any day, but only while he has unfixed mistakes. With none, `POST /api/session/start` returns 404 and the home button is disabled (`replay.due` in `/api/state`).
 
 Rules, all enforced in `POST /api/session/start` (the client only sends `slot` and `week`; the server decides the kind and today from its own clock, so changing the device date does nothing):
 - Slot statuses: `locked` (day is ahead, never playable), `open` (today), `missed` (past and not done, still playable), `done`, `skip` (the day is a rest day or holiday, not a failure), `na` (no questions or worksheet yet), `unpublished`.

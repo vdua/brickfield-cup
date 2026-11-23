@@ -4,11 +4,13 @@
 A correct answer earns runs by difficulty: easy 2, medium 4, hard 6 (`RUNS_FOR` in `lib/content.js`). A wrong or skipped answer earns 0 and is a **wicket**. A session's runs are the sum of its answers. Total runs grow the stadium; total minus pending/approved reward costs is the wallet. Badges give recognition, not runs. Only a worksheet's latest finished attempt counts.
 
 ## Regularity bonus (`lib/api/streak.js`)
-- Paid once per working day, on the first finished session of the day: day 1 of a streak 1 run, day 2 2 runs ... capped at **6** runs a day.
+- A **working day** is a day that is not a rest day, not a holiday, and has a playable mission scheduled on it (a published slot whose questions or worksheet exist). Days with nothing published, or only slots with no questions yet, are not working days.
+- **Replay never counts**: it is not a mission, so it does not extend the streak, pay the bonus or add wickets, and it can be played any day he has mistakes.
+- Paid once per working day, on the first finished mission session of the day: day 1 of a streak 1 run, day 2 2 runs ... capped at **6** runs a day.
 - Stored in `daily_bonus` (one row per day), so changing the rules later never rewrites past totals. Totals add it to session runs (`totals.bonus`).
-- A missed **working** day resets the streak to 0. Rest days and holidays are not working days: they never break it.
+- A missed **working** day resets the streak to 0. Rest days, holidays and days with nothing playable scheduled are skipped: they never break it. A catch-up played on a day that is not a working day does not count for the streak either.
 - **Every 10 wickets reset the streak** (wickets accumulate across sessions, wrong or skipped answers, paper worksheets included). The reset happens right after the session that reaches 10; the day's bonus is already paid, and tomorrow starts again at 1.
-- The streak is replayed from finished sessions, so adding a holiday for a past day protects the streak from then on. A bonus already paid is not clawed back or topped up.
+- The streak is replayed from finished sessions, so adding a holiday for a past day, or publishing a week later, changes it from then on. A bonus already paid is not clawed back or topped up.
 - The streak badges (3, 7, 14 days) use this streak.
 
 ## Rest days and holidays

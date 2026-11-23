@@ -11,7 +11,7 @@ export function renderBar() {
     <div class="stat"><small>Total runs</small><b class="led">${t.runs}</b></div>
     <div class="stat"><small>Runs to spend</small><b class="led">${t.wallet}</b></div>
     <div class="stat"><small>Partnership</small><b class="led">${ctx.S.streak} ${ctx.S.streak === 1 ? "day" : "days"}</b>
-      <small>${reg.rest ? "Rest day" : reg.nextBonus ? `+${reg.nextBonus} run${reg.nextBonus === 1 ? "" : "s"} today` : "Bonus earned"} · ${reg.wicketsLeft} wkts left</small></div>
+      <small>${reg.rest ? "Rest day" : reg.idle ? "No bonus today" : reg.nextBonus ? `+${reg.nextBonus} run${reg.nextBonus === 1 ? "" : "s"} today` : "Bonus earned"} · ${reg.wicketsLeft} wkts left</small></div>
     <button class="iconbtn" id="snd" type="button" aria-pressed="${sound.on}">${sound.on ? "Sound on" : "Sound off"}</button>
     <button class="iconbtn" id="logout" type="button">Log out</button>`;
   bar.querySelector("#snd").onclick = () => { sound.on = !sound.on; renderBar(); logEvent("sound_toggle", sound.on ? "on" : "off"); };
@@ -37,9 +37,10 @@ function taskHtml(x) {
 }
 function replayHtml() {
   const r = ctx.S.replay;
-  return `<button class="task extra" type="button" data-kind="revision" style="--c:${TASK_COLORS.revision}">
-    <b>Replay</b><small>Fix old mistakes · 5 balls · optional</small>${r.n ? `<small>Done ${r.n} this week${r.best !== null ? ` · best ${r.best}/${r.total}` : ""}</small>` : ""}
-    <span class="when">Any day</span></button>`;
+  const none = !r.due;
+  return `<button class="task extra" type="button" data-kind="revision" data-status="${none ? "nomistakes" : "open"}" ${none ? "aria-disabled='true'" : ""} style="--c:${TASK_COLORS.revision}">
+    <b>Replay</b><small>Fix old mistakes · ${Math.min(r.due, 5) || 5} balls · optional</small>${r.n ? `<small>Done ${r.n} this week${r.best !== null ? ` · best ${r.best}/${r.total}` : ""}</small>` : ""}
+    <span class="when">${none ? "No mistakes to fix" : "Any day"}</span></button>`;
 }
 
 // ---------- home ----------
@@ -128,7 +129,7 @@ export async function home() {
   const sea = document.getElementById("season"), nw = document.getElementById("nowwk");
   if (sea && nw) sea.scrollLeft = nw.offsetLeft - sea.offsetLeft - sea.clientWidth / 2 + nw.clientWidth / 2;
   app.querySelectorAll(".task").forEach((b) => b.addEventListener("click", () => {
-    if (b.getAttribute("aria-disabled")) return toast({ done: "You already finished this one.", na: "Dad hasn't added the questions for this one yet.", skip: "Rest day. No play today.", unpublished: "Dad hasn't published this week yet." }[b.dataset.status] || `Not yet. ${b.dataset.why}.`, "error");
+    if (b.getAttribute("aria-disabled")) return toast({ done: "You already finished this one.", na: "Dad hasn't added the questions for this one yet.", skip: "Rest day. No play today.", unpublished: "Dad hasn't published this week yet.", nomistakes: "No mistakes to replay. Nice batting!" }[b.dataset.status] || `Not yet. ${b.dataset.why}.`, "error");
     sfx("click"); location.hash = b.dataset.slot ? `play/${b.dataset.kind}/${b.dataset.slot}/${b.dataset.week}` : `play/${b.dataset.kind}`;
   }));
   app.querySelectorAll("[data-react]").forEach((b) => b.addEventListener("click", async () => {
