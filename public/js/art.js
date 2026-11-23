@@ -56,7 +56,8 @@ export function stadiumSVG(stage, runs = 0, fill = false) {
 
 // Coach Stumpy: an original brick-robot cricket coach.
 export function coachSVG(mood = 'happy') {
-	const mouth = mood === 'sad' ? 'M88 112 Q100 102 112 112' : mood === 'wow' ? '' : 'M86 106 Q100 120 114 106';
+	const mouths = { sad: 'M88 112 Q100 102 112 112', wow: '' };
+	const mouth = mouths[mood] ?? 'M86 106 Q100 120 114 106';
 	return `<svg viewBox="0 0 200 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Coach Stumpy">
   <ellipse cx="100" cy="210" rx="60" ry="8" fill="#000" opacity=".15"/>
   <rect x="62" y="150" width="20" height="50" rx="6" fill="#1c7ed6"/><rect x="118" y="150" width="20" height="50" rx="6" fill="#1c7ed6"/>

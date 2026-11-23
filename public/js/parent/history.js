@@ -21,21 +21,24 @@ export async function activity() {
 	const byDay = {};
 	for (const e of ev) { const d = istDate(e.created_at).toISOString().slice(0, 10); (byDay[d] ||= []).push(e); }
 	main.innerHTML = `<section class="card"><h2>Everything he did</h2><p class="sub">App opens, sessions, early exits and switching away during a question. Newest first, India time.</p>
-    <div class="timeline">${Object.entries(byDay).map(([d, list]) => `<div class="tl-day">${fmtWhen(list[0].created_at).split(',')[0]}</div>${list.map((e) => `<div class="tl"><time>${istDate(e.created_at).toISOString().slice(11, 16)}</time>
+    <div class="timeline">${Object.entries(byDay).map(([, list]) => `<div class="tl-day">${fmtWhen(list[0].created_at).split(',')[0]}</div>${list.map((e) => `<div class="tl"><time>${istDate(e.created_at).toISOString().slice(11, 16)}</time>
       <span>${esc((EVT[e.type] || ((x) => `${e.type} ${x}`))(e.detail || ''))}${e.session_id ? ` · <a href="#sessions/${e.session_id}">session ${e.session_id}</a>` : ''}</span></div>`).join('')}`).join('') || `<p class="empty">Nothing yet.</p>`}</div></section>`;
 }
 
 // ---------------- sessions ----------------
 export async function sessions(id) {
 	renderTabs('sessions');
-	if (id) return sessionDetail(id);
+	if (id) {
+		await sessionDetail(id);
+		return;
+	}
 	const list = await api('/parent/sessions?limit=200');
 	main.innerHTML = `<section class="card"><h2>All sessions</h2><p class="sub">Tap a row to see every question, his answer and how long it took.</p>
   <div class="scroll"><table class="stackt"><thead><tr><th>When</th><th>Type</th><th class="num">Week</th><th class="num">Score</th><th class="num">Runs/W</th><th class="num">Time</th><th class="num">Away</th></tr></thead><tbody>
   ${list.map((s) => `<tr style="cursor:pointer" data-id="${s.id}"><td data-l="When">${fmtWhen(s.started_at)}${s.ended_at ? '' : ' <span class="pill bad">not finished</span>'}</td><td data-l="Type">${KIND[s.kind] || s.kind}</td><td class="num" data-l="Week">${s.week}</td>
     <td class="num" data-l="Score"><span class="pill ${level(pct(s.score, s.total))}">${s.score}/${s.total}</span></td><td class="num" data-l="Runs">${s.runs}/${s.wickets}</td><td class="num" data-l="Time">${s.ended_at ? fmtDur(s.duration_s) : ''}</td>
     <td class="num" data-l="Away">${s.away_count ? `${s.away_count}× · ${fmtDur(s.away_s)}` : ''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">No sessions yet.</td></tr>`}</tbody></table></div></section>`;
-	main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => { location.hash = `sessions/${tr.dataset.id}`; }));
+	main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => { window.location.hash = `sessions/${tr.dataset.id}`; }));
 }
 async function sessionDetail(id) {
 	const d = await api(`/parent/sessions/${id}`);

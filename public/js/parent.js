@@ -9,7 +9,7 @@ import { family, settings } from './parent/family.js';
 
 // ---------------- routing ----------------
 async function route() {
-	const [name, arg] = (location.hash.slice(1) || 'overview').split('/');
+	const [name, arg] = (window.location.hash.slice(1) || 'overview').split('/');
 	main.innerHTML = `<p class="empty">Loading…</p>`;
 	try {
 		if (name === 'activity') await activity();
@@ -23,7 +23,7 @@ async function route() {
 		else await overview();
 	} catch (e) { main.innerHTML = `<p class="empty">${esc(e.message)}</p>`; }
 }
-addEventListener('hashchange', route);
+window.addEventListener('hashchange', route);
 document.getElementById('refresh').onclick = route;
-document.getElementById('logout').onclick = async () => { await api('/logout', { body: {} }).catch(() => {}); location.href = '/parent-login'; };
-api('/me').then((r) => { if (r.role !== 'parent') location.href = '/kid'; else route(); });
+document.getElementById('logout').onclick = async () => { await api('/logout', { body: {} }).catch(() => {}); window.location.href = '/parent-login'; };
+api('/me').then((r) => { if (r.role !== 'parent') window.location.href = '/kid'; else route(); });

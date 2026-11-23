@@ -11,7 +11,7 @@ const kinds = new Set(['practice', 'before', 'after', 'puzzle', 'diagnostic', 'm
 const rows = qs.map((q, i) => {
 	if (!kinds.has(q.k)) throw new Error(`Question ${i}: bad kind ${q.k}`);
 	if (q.o && !(Number(q.a) >= 0 && Number(q.a) < q.o.length)) throw new Error(`Question ${i}: bad option index`);
-	return `(${q.w | 0}, ${esc(q.k)}, ${esc(q.t)}, ${q.d | 0 || 2}, ${esc(q.q)}, ${esc(q.a)}, ${q.o ? esc(JSON.stringify(q.o)) : 'NULL'}, ${esc(q.m)})`;
+	return `(${Math.trunc(q.w) || 0}, ${esc(q.k)}, ${esc(q.t)}, ${Math.trunc(q.d) || 2}, ${esc(q.q)}, ${esc(q.a)}, ${q.o ? esc(JSON.stringify(q.o)) : 'NULL'}, ${esc(q.m)})`;
 });
 
 // Idempotent: a row is inserted only if no seed-bank question (not a worksheet one) with the

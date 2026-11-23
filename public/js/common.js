@@ -9,7 +9,10 @@ export async function api(path, opts = {}) {
 		body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
 	});
 	const data = await r.json().catch(() => ({}));
-	if (r.status === 401 && !opts.noRedirect) { location.href = location.pathname.startsWith('/parent') ? '/parent-login' : '/'; throw new Error('Please log in'); }
+	if (r.status === 401 && !opts.noRedirect) {
+		window.location.href = window.location.pathname.startsWith('/parent') ? '/parent-login' : '/';
+		throw new Error('Please log in');
+	}
 	if (!r.ok) throw new Error(data.error || 'Something went wrong');
 	return data;
 }
@@ -24,7 +27,12 @@ export function toast(msg, kind = 'info') {
 	setTimeout(() => t.classList.add('out'), 2800); setTimeout(() => t.remove(), 3300);
 }
 
-export const fmtDur = (s) => { s = Math.max(0, Math.round(s || 0)); const m = Math.floor(s / 60); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : m ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`; };
+export const fmtDur = (secs) => {
+	const s = Math.max(0, Math.round(secs || 0));
+	const m = Math.floor(s / 60);
+	if (m >= 60) return `${Math.floor(m / 60)}h ${m % 60}m`;
+	return m ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${s}s`;
+};
 export const istDate = (iso) => new Date(new Date(iso).getTime() + 330 * 60000);
 export const fmtWhen = (iso) => {
 	if (!iso) return '—';
@@ -34,7 +42,9 @@ export const fmtWhen = (iso) => {
 		today = now.toISOString().slice(0, 10);
 	const yest = new Date(now.getTime() - 864e5).toISOString().slice(0, 10);
 	const time = d.toISOString().slice(11, 16);
-	const label = day === today ? 'Today' : day === yest ? 'Yesterday' : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+	let label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+	if (day === today) label = 'Today';
+	else if (day === yest) label = 'Yesterday';
 	return `${label}, ${time}`;
 };
 
@@ -48,7 +58,7 @@ export function hydrateAssets(root = document) {
 		const img = new Image();
 		img.alt = el.getAttribute('aria-label') || '';
 		img.onload = () => { el.innerHTML = ''; el.appendChild(img); el.classList.add('has-img'); };
-		img.onerror = () => { missing.add(src); try { sessionStorage.setItem('bc_missing', JSON.stringify([...missing])); } catch (e) {} };
+		img.onerror = () => { missing.add(src); try { sessionStorage.setItem('bc_missing', JSON.stringify([...missing])); } catch (e) { /* storage unavailable */ } };
 		img.src = src;
 	});
 }
@@ -57,7 +67,7 @@ export function hydrateAssets(root = document) {
 let ctx = null;
 export const sound = {
 	get on() { try { return localStorage.getItem('bc_sound') !== 'off'; } catch (e) { return true; } },
-	set on(v) { try { localStorage.setItem('bc_sound', v ? 'on' : 'off'); } catch (e) {} },
+	set on(v) { try { localStorage.setItem('bc_sound', v ? 'on' : 'off'); } catch (e) { /* storage unavailable */ } },
 };
 const files = {};
 export function sfx(name) {
@@ -103,22 +113,38 @@ export function confetti(n = 120) {
 	if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 	const c = document.createElement('canvas');
 	c.className = 'confetti'; document.body.appendChild(c);
-	const W = (c.width = innerWidth); const H = (c.height = innerHeight); const
-		g = c.getContext('2d');
+	c.width = window.innerWidth;
+	c.height = window.innerHeight;
+	const W = c.width;
+	const H = c.height;
+	const g = c.getContext('2d');
 	const cols = ['#e03131', '#fcc419', '#1c7ed6', '#2f9e44', '#f76707', '#ae3ec9'];
-	const ps = Array.from({ length: n }, () => ({ x: W / 2 + (Math.random() - 0.5) * 200, y: H * 0.45, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 18 - 6, r: Math.random() * 6, w: 10 + Math.random() * 8, c: cols[(Math.random() * 6) | 0], s: (Math.random() - 0.5) * 0.3 }));
+	const ps = Array.from({ length: n }, () => ({
+		x: W / 2 + (Math.random() - 0.5) * 200,
+		y: H * 0.45,
+		vx: (Math.random() - 0.5) * 16,
+		vy: -Math.random() * 18 - 6,
+		r: Math.random() * 6,
+		w: 10 + Math.random() * 8,
+		c: cols[Math.floor(Math.random() * 6)],
+		s: (Math.random() - 0.5) * 0.3,
+	}));
 	let f = 0;
 	(function step() {
 		g.clearRect(0, 0, W, H);
 		for (const p of ps) {
 			p.vy += 0.5; p.x += p.vx; p.y += p.vy; p.r += p.s;
-			g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c; g.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2);
-			g.fillRect(-p.w / 3, -p.w / 2.2, p.w / 4, p.w / 5); g.fillRect(p.w / 12, -p.w / 2.2, p.w / 4, p.w / 5); g.restore();
+			g.save(); g.translate(p.x, p.y); g.rotate(p.r); g.fillStyle = p.c;
+			g.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2);
+			g.fillRect(-p.w / 3, -p.w / 2.2, p.w / 4, p.w / 5);
+			g.fillRect(p.w / 12, -p.w / 2.2, p.w / 4, p.w / 5);
+			g.restore();
 		}
-		if (++f < 150) requestAnimationFrame(step); else c.remove();
+		f += 1;
+		if (f < 150) requestAnimationFrame(step); else c.remove();
 	}());
 }
 
-export function logEvent(type, detail = '', session_id = null) {
-	return api('/event', { body: { type, detail, session_id } }).catch(() => {});
+export function logEvent(type, detail = '', sessionId = null) {
+	return api('/event', { body: { type, detail, session_id: sessionId } }).catch(() => {});
 }

@@ -15,6 +15,11 @@ function weekMaxCard(n) {
 }
 
 // ---------------- overview ----------------
+const masteryColor = (accuracy) => {
+	if (accuracy >= 80) return 'var(--green)';
+	return accuracy >= 60 ? 'var(--amber)' : 'var(--red)';
+};
+
 export async function overview() {
 	ctx.OV = await api('/parent/overview');
 	ctx.pending = ctx.OV.pendingRewards.length;
@@ -55,12 +60,20 @@ export async function overview() {
       <tbody>${ctx.OV.tracker.map((r) => {
 		const b = r.before ? pct(r.before.score, r.before.total) : null; const
 			a = r.after ? pct(r.after.score, r.after.total) : null;
-		const gain = r.before && r.after ? r.after.score - Math.round((r.before.score / r.before.total) * r.after.total) : null;
-		return `<tr class="${r.week === w ? 'now' : r.week > w ? 'future' : ''}">
+		const gain = r.before && r.after
+			? r.after.score - Math.round((r.before.score / r.before.total) * r.after.total)
+			: null;
+		let rowClass = '';
+		if (r.week === w) rowClass = 'now';
+		else if (r.week > w) rowClass = 'future';
+		let gainClass = '';
+		if (gain > 0) gainClass = 'up';
+		else if (gain < 0) gainClass = 'down';
+		return `<tr class="${rowClass}">
           <td data-l="Week">${r.week}</td><td data-l="Topic">${esc(r.topic)}</td>
           <td class="num" data-l="Before">${r.before ? `<span class="pill ${level(b)}">${score(r.before)}</span>` : ''}</td>
           <td class="num" data-l="After">${r.after ? `<span class="pill ${level(a)}">${score(r.after)}</span>` : ''}</td>
-          <td class="num" data-l="Gain">${gain !== null ? `<span class="gain ${gain > 0 ? 'up' : gain < 0 ? 'down' : ''}">${gain > 0 ? '+' : ''}${gain}</span>` : ''}</td>
+          <td class="num" data-l="Gain">${gain !== null ? `<span class="gain ${gainClass}">${gain > 0 ? '+' : ''}${gain}</span>` : ''}</td>
           <td class="num" data-l="Practice">${r.practice ? `${r.practice.pct}% <small>(${r.practice.sessions})</small>` : ''}</td>
           <td class="num" data-l="Mock">${r.mock ? score(r.mock) : ''}</td>
           <td class="num" data-l="Slips">${r.careless || ''}</td>
@@ -72,7 +85,7 @@ export async function overview() {
       <h2>Topic mastery</h2><p class="sub">All-time accuracy, weakest first. Dots show the last 15 answers (green = right).</p>
       ${weakest ? `<div class="focus" style="margin-bottom:14px"><b>Focus next:</b> ${esc(weakest.topic)} — ${weakest.accuracy}% over ${weakest.attempts} questions${weakest.careless ? `, ${weakest.careless} silly slip${weakest.careless > 1 ? 's' : ''}` : ''}. ${weakest.accuracy < 60 ? 'Re-teach with a bar model this weekend, then a Replay session.' : 'Add a Replay session midweek.'}</div>` : ''}
       <div class="mastery">${topics.map((t) => `<div class="mrow"><span>${esc(t.topic)}</span>
-        <div class="track"><div class="fill" style="width:${t.accuracy}%;background:${t.accuracy >= 80 ? 'var(--green)' : t.accuracy >= 60 ? 'var(--amber)' : 'var(--red)'}"></div></div><b class="num" style="text-align:right">${t.accuracy}%</b>
+        <div class="track"><div class="fill" style="width:${t.accuracy}%;background:${masteryColor(t.accuracy)}"></div></div><b class="num" style="text-align:right">${t.accuracy}%</b>
         <div class="meta"><span>${t.attempts} Qs</span><span>avg ${t.avgSec}s</span>${t.careless ? `<span>${t.careless} slip${t.careless > 1 ? 's' : ''}</span>` : ''}<span class="strip">${t.recent.slice().reverse().map((c) => `<i class="${c ? 'ok' : ''}"></i>`).join('')}</span></div></div>`).join('') || `<p class="empty">No answers yet.</p>`}</div>
     </section>
   </div>

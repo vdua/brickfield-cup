@@ -43,7 +43,7 @@ export async function questions() {
       <td><div class="row-actions"><button class="btn sm light" type="button" data-edit="${q.id}">Edit</button><button class="btn sm red" type="button" data-del="${q.id}">Remove</button></div></td></tr>`).join('') || `<tr><td colspan="6" class="empty">No questions match.</td></tr>`;
 		main.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => {
 			const q = qs.find((x) => x.id === Number(b.dataset.edit));
-			for (const k of ['id', 'week', 'kind', 'topic', 'difficulty', 'prompt', 'answer', 'method']) f.elements[k].value = q[k] ?? '';
+			for (const field of ['id', 'week', 'kind', 'topic', 'difficulty', 'prompt', 'answer', 'method']) f.elements[field].value = q[field] ?? '';
 			f.elements.options.value = (q.options || []).join('\n');
 			main.querySelector('#formTitle').textContent = `Edit question #${q.id}`; f.scrollIntoView({ behavior: 'smooth' });
 		}));

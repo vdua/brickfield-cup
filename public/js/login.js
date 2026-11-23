@@ -12,7 +12,7 @@ let pin = '';
 
 document.getElementById('scene').innerHTML = stadiumSVG(6, 2026, true);
 hydrateAssets();
-api('/me', { noRedirect: true }).then((r) => { location.href = home(r.role); }).catch(() => {});
+api('/me', { noRedirect: true }).then((r) => { window.location.href = home(r.role); }).catch(() => {});
 
 document.getElementById('pad').innerHTML = keys.map((k) => `<button class="brick ${k === 'Go' ? 'green' : 'ghost'}" type="button" data-k="${k}" aria-label="${k === '⌫' ? 'Delete' : k}">${k}</button>`).join('');
 
@@ -22,7 +22,7 @@ async function go() {
 	if (!pin) return;
 	try {
 		const r = await api('/login', { body: { role, pin }, noRedirect: true });
-		location.href = home(r.role);
+		window.location.href = home(r.role);
 	} catch (e) { err.textContent = e.message; pin = ''; draw(); }
 }
 
@@ -34,7 +34,7 @@ document.getElementById('pad').addEventListener('click', (e) => {
 	err.textContent = '';
 	draw();
 });
-addEventListener('keydown', (e) => {
+window.addEventListener('keydown', (e) => {
 	if (/^\d$/.test(e.key) && pin.length < 8) { pin += e.key; draw(); } else if (e.key === 'Backspace') { pin = pin.slice(0, -1); draw(); } else if (e.key === 'Enter') go();
 });
 draw();
