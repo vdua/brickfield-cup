@@ -26,4 +26,4 @@ Run `migrations/2026-11-weekly-format.sql` against the live D1 **before** deploy
 ```
 npx wrangler d1 execute brickfield-db --remote --file=migrations/2026-11-weekly-format.sql
 ```
-Do not re-run `seed.sql` on a live database. Test it first with `--local`.
+`seed.sql` is idempotent (it skips questions already in the bank), so re-running it is safe.
