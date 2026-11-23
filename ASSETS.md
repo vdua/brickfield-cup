@@ -42,7 +42,7 @@ Optional extra poses for later (not wired in yet): cheering with both arms up; t
 File: `login-hero.webp`. Size **1600 × 1800 px** (portrait-ish; it fills the left half on desktop and a strip on phones).
 > Close-up 3D toy-brick diorama: a small brick cricket batsman hitting a ball high into a sunset sky over a brick cricket stadium, motion trail behind the ball, confetti bricks flying, dramatic low camera angle, tilt-shift, glossy plastic, joyful, no text
 
-## 4. Badges (13)
+## 4. Badges (14)
 
 Files in `badges/`: `badges/<code>.webp`. Size **256 × 236 px**, **transparent background**.
 Shared prompt start: *"Round game achievement medal made of glossy toy building bricks, centred, isolated on transparent background, 3D icon, no text, featuring …"*
@@ -60,8 +60,9 @@ Shared prompt start: *"Round game achievement medal made of glossy toy building 
 | `topic_master.webp` | Topic Master | a golden crown on a stack of books, navy |
 | `comeback.webp` | Comeback King | a cricket ball with a circular arrow, mint green |
 | `all_rounder.webp` | All-Rounder | a bat, ball and gloves around a star, blue |
+| `full_match.webp` | Full Match | seven toy bricks stacked like a small wall inside the medal, a bottom row of 4 and a top row of 3 (offset like real brickwork), each brick with a green tick, a cricket ball on top, red |
 | `early_bird.webp` | Early Bird | a rising sun behind a cricket pitch, golden |
-| `honest_review.webp` | Honest Review | a magnifying glass over a cricket ball, violet |
+| `honest_review.webp` | Honest Review | a brick umpire making the "T" review signal with both hands, a small green tick on a ball-tracking screen behind (successful DRS), violet |
 
 ## 5. Favicon
 
@@ -81,6 +82,6 @@ public/assets/
   coach.webp
   favicon.png
   stadium-0.webp … stadium-6.webp
-  badges/first_innings.webp … badges/honest_review.webp   (13 files)
+  badges/first_innings.webp … badges/honest_review.webp   (14 files)
   sfx/hit.mp3 four.mp3 six.mp3 out.mp3 badge.mp3 click.mp3 (optional)
 ```

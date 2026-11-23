@@ -80,8 +80,9 @@ main.home { max-width: 1180px; margin: 0 auto; padding: 18px max(3vw, 14px) 60px
 .brickbar i.on { background: var(--red); box-shadow: none; }
 .brickbar i.on:nth-child(3n+2) { background: var(--yellow); } .brickbar i.on:nth-child(3n) { background: var(--blue); }
 
-.coach { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; align-items: end; }
-.coach .bot { width: 110px; height: 120px; } .coach .bot svg, .coach .bot img { width: 100%; height: 100%; object-fit: contain; }
+.coach { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; align-items: end; }
+.coach .bot { width: 140px; height: 160px; overflow: hidden; }
+.coach .bot svg, .coach .bot img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); transform-origin: center bottom; }
 .bubble { position: relative; background: #f3f6fb; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 16px; }
 .bubble::after { content: ""; position: absolute; left: -16px; bottom: 18px; border: 8px solid transparent; border-right-color: var(--line); }
 .bubble .from { font-size: 13px; color: var(--muted); font-weight: 700; }
@@ -113,9 +114,10 @@ main.home { max-width: 1180px; margin: 0 auto; padding: 18px max(3vw, 14px) 60px
 .wk .ph { display: inline-block; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 0 6px; background: #dee2e6; margin-bottom: 4px; }
 .wk.final { background: #fbf0d3; }
 
-.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 12px; }
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
 .badge { text-align: center; font-size: 13px; line-height: 1.2; background: none; border: 0; padding: 4px; border-radius: 12px; color: var(--ink); }
-.badge .ic { width: 78px; height: 72px; margin: 0 auto 4px; } .badge .ic svg, .badge .ic img { width: 100%; height: 100%; object-fit: contain; }
+.badge .ic { width: 100%; max-width: 130px; height: auto; aspect-ratio: 1 / 1; margin: 0 auto 4px; overflow: hidden; }
+.badge .ic svg, .badge .ic img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.15); }
 .badge.locked { opacity: .55; }
 .badge.fresh .ic { animation: pop .8s cubic-bezier(.2,1.6,.5,1); }
 @keyframes pop { from { transform: scale(0) rotate(-30deg); } }
@@ -202,6 +204,6 @@ main.home { max-width: 1180px; margin: 0 auto; padding: 18px max(3vw, 14px) 60px
   .iconbtn { height: 36px; min-width: 36px; padding: 0 10px; font-size: 13px; }
   .scorebar .iconbtn:first-of-type { margin-left: auto; }
   .why { grid-template-columns: 1fr; }
-  .coach { grid-template-columns: 80px minmax(0,1fr); } .coach .bot { width: 80px; height: 90px; }
+  .coach { grid-template-columns: 100px minmax(0,1fr); } .coach .bot { width: 100px; height: 115px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
