@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { makeEnv } from "./dev-server.mjs";
 import { handle, isCorrect } from "../lib/api.js";
+import { replay } from "../lib/api/streak.js";
 
 const env = makeEnv(":memory:");
 const bank = JSON.parse(readFileSync(new URL("../data/questions.json", import.meta.url)));
@@ -31,6 +32,31 @@ assert.equal((await call("kid", "POST", "/api/login", { role: "kid", pin: "1234"
 assert.equal((await call("parent", "POST", "/api/login", { role: "parent", pin: "9999" })).status, 200);
 assert.equal((await call("kid", "GET", "/api/parent/overview")).status, 403);
 
+// regularity: rest days, holidays, bonus
+const today = new Date(Date.now() + 330 * 60000).toISOString().slice(0, 10);
+assert.equal((await call("parent", "POST", "/api/parent/settings", { rest_days: "" })).status, 200);
+assert.equal((await call("parent", "POST", "/api/parent/holidays", { day: today, note: "Test holiday" })).status, 200);
+const blocked = await call("kid", "POST", "/api/session/start", { kind: "practice" });
+assert.equal(blocked.status, 403);
+assert.ok(blocked.data.error.includes("holiday: Test holiday"));
+assert.equal((await call("kid", "GET", "/api/state")).data.regularity.rest, "holiday: Test holiday");
+assert.equal((await call("parent", "DELETE", `/api/parent/holidays/${today}`)).status, 200);
+const none = () => null;
+const day = (n, wickets = 0) => ({ day: `2026-12-${String(n).padStart(2, "0")}`, wickets }); // 2026-12-01 is a Tuesday
+let r = replay([day(1), day(2), day(3)], none, "2026-12-03");
+assert.deepEqual([r.streak, [...r.dayBonus.values()]], [3, [1, 2, 3]]);
+r = replay([day(1), day(2), day(4)], none, "2026-12-04");
+assert.deepEqual([r.streak, [...r.dayBonus.values()]], [1, [1, 2, 1]]); // missed 3 Dec resets
+const friday = (d) => (new Date(`${d}T00:00:00Z`).getUTCDay() === 5 ? "rest day" : null);
+r = replay([day(3), day(5)], friday, "2026-12-05"); // 4 Dec is a Friday: skipping it keeps the streak
+assert.deepEqual([r.streak, [...r.dayBonus.values()]], [2, [1, 2]]);
+r = replay(Array.from({ length: 9 }, (_, i) => day(i + 6)), none, "2026-12-14"); // days 6-14
+assert.deepEqual([...r.dayBonus.values()], [1, 2, 3, 4, 5, 6, 6, 6, 6]); // capped at 6
+r = replay([day(1, 6), day(2, 4)], none, "2026-12-02"); // 10 wickets reset it after the second innings
+assert.equal(r.streak, 0);
+r = replay([day(1, 6), day(2, 3)], none, "2026-12-03");
+assert.deepEqual([r.streak, r.wicketsLeft, r.nextBonus], [2, 1, 3]);
+
 // state
 let st = (await call("kid", "GET", "/api/state")).data;
 assert.equal(st.mission.length, 5);
@@ -55,6 +81,7 @@ const fin = (await call("kid", "POST", `/api/session/${start.session.id}/finish`
 console.log("diagnostic finished:", fin.session.score, "/", fin.session.total, "runs", fin.session.runs, "badges", fin.newBadges.map((b) => b.code));
 assert.equal(fin.session.score, 17);
 assert.ok(fin.newBadges.some((b) => b.code === "first_innings"));
+assert.equal(fin.bonus.runs, 1); // first working day pays 1 run, once a day
 
 // practice + puzzle + revision
 for (const kind of ["practice", "puzzle", "revision", "before", "after"]) {
@@ -67,6 +94,21 @@ for (const kind of ["practice", "puzzle", "revision", "before", "after"]) {
 st = (await call("kid", "GET", "/api/state")).data;
 console.log("totals", st.totals, "streak", st.streak, "stage", st.stadium.stage);
 
+// the bonus is once a day: a second session pays nothing more
+{
+  const x = (await call("kid", "POST", "/api/session/start", { kind: "practice", week: 2 })).data;
+  for (const q of x.questions) await call("kid", "POST", `/api/session/${x.session.id}/answer`, { question_id: q.id, given: q.options ? "0" : "1", time_ms: 9000 });
+  const fx = (await call("kid", "POST", `/api/session/${x.session.id}/finish`, {})).data;
+  assert.equal(fx.bonus.runs, 0);
+}
+// week 1 format: 6 before, 4 practice, 6 puzzle, 6 after
+for (const [kind, n] of [["before", 6], ["practice", 4], ["puzzle", 6], ["after", 6]]) {
+  const s1 = await call("kid", "POST", "/api/session/start", { kind, week: 1 });
+  assert.equal(s1.data.questions.length, n, `week 1 ${kind}`);
+  for (const q of s1.data.questions) await call("kid", "POST", `/api/session/${s1.data.session.id}/answer`, { question_id: q.id, given: q.options ? "0" : "1", time_ms: 9000 });
+  await call("kid", "POST", `/api/session/${s1.data.session.id}/finish`, {});
+}
+
 // rewards: request one we can't afford
 const big = st.rewards.find((r) => r.cost > st.totals.wallet);
 assert.equal((await call("kid", "POST", `/api/rewards/${big.id}/request`)).status, 400);
@@ -74,7 +116,13 @@ assert.equal((await call("kid", "POST", `/api/rewards/${big.id}/request`)).statu
 // parent
 const ov = (await call("parent", "GET", "/api/parent/overview")).data;
 assert.equal(ov.tracker.length, 19);
-assert.ok(ov.tracker[0].before.total === 20);
+assert.equal(ov.nextWeek.week, ov.week + 1);
+assert.equal(ov.totals.bonus, 1);
+{ // week 2 has practice/before/after loaded, so its maximum is a positive total with the 6-day bonus
+  const w2 = (await call("parent", "GET", "/api/parent/overview")).data;
+  assert.ok(w2.nextWeek.total.max >= w2.nextWeek.total.min);
+}
+assert.ok(ov.tracker[0].before.total === 6);
 console.log("week1 tracker", ov.tracker[0], "topics", ov.topics.length, "daily", ov.daily.slice(-1)[0]);
 const errs = (await call("parent", "GET", "/api/parent/errors")).data;
 assert.ok(errs.length > 0 && errs.some((e) => e.mistake === "careless"));

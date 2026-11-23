@@ -86,7 +86,7 @@ There's also a zero-install test server that uses Node's built-in SQLite: `node 
 ]
 ```
 
-Kinds: `before` and `after` (5 per week; these are the weekly checks), `practice` (6 are picked at random per session, preferring ones he hasn't got right yet), `puzzle` (use week 0 for "any week"), `mock` (all mock questions for that week are used; with none, 20 random past questions are used), `diagnostic`.
+Kinds: `before` and `after` (6 each per week: the Saturday and Sunday checks), `practice` (4 are picked at random per session, three sessions Mon–Wed, preferring ones he hasn't got right), `puzzle` (6 per Thursday session; week-specific first, then week 0 "any week"), `mock` (all mock questions for that week are used; with none, 20 random past questions are used), `diagnostic` (the original 20-question baseline, no longer a weekly mission). See `docs/sessions-and-missions.md`.
 For multiple choice, `answer` is the option number counting from 0. Typed answers are checked as numbers, so `3/8`, `0.375`, `4 1/6`, `₹120` and `3.5 hours` all work.
 
 To change the starter bank, edit `data/questions.json`, run `npm run seed:build`, then load `seed.sql` into a **fresh** database. Loading it twice would duplicate questions.

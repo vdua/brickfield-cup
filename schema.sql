@@ -15,13 +15,13 @@ CREATE TABLE IF NOT EXISTS questions (
   options    TEXT,                                -- JSON array for multiple choice, else NULL
   method     TEXT,
   active     INTEGER NOT NULL DEFAULT 1,
-  worksheet_id INTEGER,                           -- set when the question belongs to a daily worksheet
+  worksheet_id INTEGER,                           -- set when the question belongs to a Sunday worksheet
   created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_q_kind_week ON questions(kind, week, active);
 CREATE INDEX IF NOT EXISTS idx_q_worksheet ON questions(worksheet_id);
 
--- A daily worksheet: a set of questions (ordered by question id) plus an optional printable PDF with an OMR sheet.
+-- A Sunday worksheet (one per week): a set of questions (ordered by question id) plus an optional printable PDF with an OMR sheet.
 CREATE TABLE IF NOT EXISTS worksheets (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   title      TEXT    NOT NULL,
@@ -103,12 +103,25 @@ CREATE TABLE IF NOT EXISTS messages (
   reaction   TEXT
 );
 
+-- Regularity: parent-set holidays (nothing can be played) and the bonus paid on each working day's first finished session.
+CREATE TABLE IF NOT EXISTS holidays (
+  day        TEXT PRIMARY KEY,                    -- IST day, YYYY-MM-DD
+  note       TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS daily_bonus (
+  day        TEXT PRIMARY KEY,
+  runs       INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 INSERT OR IGNORE INTO settings(key, value) VALUES
   ('player_name', 'Champ'),
   ('team_name', 'Bellandur Brickers'),
   ('start_date', '2026-11-23'),
   ('week_override', '0'),
-  ('daily_goal_min', '30');
+  ('daily_goal_min', '30'),
+  ('rest_days', '5');                            -- weekdays with no play, comma list, 0 = Sunday ... 5 = Friday; empty = none
 
 INSERT INTO rewards(title, cost)
   SELECT 'Extra 30 min cricket on Sunday', 300 WHERE NOT EXISTS (SELECT 1 FROM rewards);

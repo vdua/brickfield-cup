@@ -1,10 +1,10 @@
-# Daily worksheets, paper practice and daily stats
+# Sunday worksheets, paper practice and daily stats
 
 ## Upload (parent login required)
 `POST /api/parent/worksheets`
 
 ```json
-{ "title": "Day 1: Fractions", "set_date": "2026-11-24", "week": 2,
+{ "title": "Week 2: Fractions", "set_date": "2026-11-29", "week": 2,
   "pdf_base64": "<printable PDF incl. OMR sheet, under ~1.3 MB>",
   "questions": [ { "q": "2+2?", "a": "4", "t": "Add", "d": 1, "m": "worked solution" },
                  { "q": "Pick even", "o": ["3","4","5"], "a": "1" } ] }

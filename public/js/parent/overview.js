@@ -1,6 +1,19 @@
 import { api, esc } from "/js/common.js";
 import { main, MISTAKE, MCOL, ctx, pct, score, level, renderTabs } from "./state.js";
 
+const span = (min, max) => (min === max ? `${max}` : `${min}–${max}`);
+function nextWeekCard(n) {
+  if (!n) return "";
+  if (!n.hasQuestions) return `<section class="card"><h2>Next week's maximum</h2><p class="sub">Week ${n.week} (${esc(n.topic)}) has no questions loaded yet, so there is nothing to total. Add its questions to see the maximum runs.</p></section>`;
+  return `<section class="card"><h2>Next week's maximum: up to ${n.total.max} runs</h2>
+    <p class="sub">Week ${n.week}, ${esc(n.topic)}. If every answer is right. Practice and puzzle questions are drawn at random, so a range means the draw changes the total. Use it to set reward prices.</p>
+    <table><thead><tr><th>Part</th><th class="num">Questions</th><th class="num">Runs</th></tr></thead><tbody>
+    ${n.parts.map((p) => `<tr><td>${esc(p.label)}</td><td class="num">${p.n}</td><td class="num">${span(p.min, p.max)}</td></tr>`).join("")}
+    <tr><td>Regularity bonus (${n.bonus.days} working days)</td><td class="num"></td><td class="num">${span(n.bonus.min, n.bonus.max)}</td></tr>
+    <tr><td><b>Total</b></td><td class="num"></td><td class="num"><b>${span(n.total.min, n.total.max)}</b></td></tr></tbody></table>
+    <p class="sub" style="margin-top:8px">The bonus is the low figure if his streak starts fresh and the high figure if it is already at 6. Replay sessions are not counted.</p></section>`;
+}
+
 // ---------------- overview ----------------
 export async function overview() {
   ctx.OV = await api("/parent/overview");
@@ -30,6 +43,8 @@ export async function overview() {
     <div class="kpi ${careless && totalWrong && careless / totalWrong >= 0.3 ? "alert" : ""}"><small>Silly slips</small><b>${careless}</b><em>${totalWrong ? Math.round((careless / totalWrong) * 100) : 0}% of all misses</em></div>
     <div class="kpi ${ctx.pending ? "alert" : ""}"><small>Reward requests</small><b>${ctx.pending}</b><em>${ctx.pending ? '<a href="#family">Review now</a>' : "none waiting"}</em></div>
   </div>
+
+  ${nextWeekCard(ctx.OV.nextWeek)}
 
   <div class="grid2">
     <section class="card">
