@@ -12,10 +12,12 @@
     "dev:node": "node test/dev-server.mjs",
     "test": "node test/api.test.mjs",
     "deploy": "wrangler pages deploy public",
+    "test:e2e": "playwright test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "wrangler": "^4.0.0",
     "eslint": "^8.57.0",
     "eslint-config-airbnb-base": "^15.0.0",
