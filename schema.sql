@@ -115,6 +115,12 @@ CREATE TABLE IF NOT EXISTS daily_bonus (
   created_at TEXT NOT NULL
 );
 
+-- Parent teaching guides live as markdown in public/guides/; this only records which week's guide has been taught.
+CREATE TABLE IF NOT EXISTS guide_status (
+  week      INTEGER PRIMARY KEY,
+  taught_at TEXT NOT NULL
+);
+
 INSERT OR IGNORE INTO settings(key, value) VALUES
   ('player_name', 'Champ'),
   ('team_name', 'Bellandur Brickers'),
