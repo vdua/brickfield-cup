@@ -103,12 +103,25 @@ CREATE TABLE IF NOT EXISTS messages (
   reaction   TEXT
 );
 
+-- Regularity: parent-set holidays (nothing can be played) and the bonus paid on each working day's first finished session.
+CREATE TABLE IF NOT EXISTS holidays (
+  day        TEXT PRIMARY KEY,                    -- IST day, YYYY-MM-DD
+  note       TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS daily_bonus (
+  day        TEXT PRIMARY KEY,
+  runs       INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 INSERT OR IGNORE INTO settings(key, value) VALUES
   ('player_name', 'Champ'),
   ('team_name', 'Bellandur Brickers'),
   ('start_date', '2026-11-23'),
   ('week_override', '0'),
-  ('daily_goal_min', '30');
+  ('daily_goal_min', '30'),
+  ('rest_days', '5');                            -- weekdays with no play, comma list, 0 = Sunday ... 5 = Friday; empty = none
 
 INSERT INTO rewards(title, cost)
   SELECT 'Extra 30 min cricket on Sunday', 300 WHERE NOT EXISTS (SELECT 1 FROM rewards);

@@ -167,7 +167,7 @@ export async function finish(quit) {
       <div class="art" data-asset="/assets/stadium-${f.stageAfter}.webp" style="border-radius:14px;overflow:hidden">${stadiumSVG(f.stageAfter, f.totals.runs)}</div></div>` : ""}
     <div class="panel" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
       <div><b>${s.score === s.total && s.total ? "Not out and perfect!" : s.wickets ? "Every wicket is a lesson. Your mistakes go to Replay." : "Great knock!"}</b><br>
-      <span class="sub">Total runs now: ${f.totals.runs}</span></div>
+      <span class="sub">${f.bonus?.runs ? `+${f.bonus.runs} regularity run${f.bonus.runs === 1 ? "" : "s"} for showing up. ` : ""}Total runs now: ${f.totals.runs}</span></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">${["practice", "puzzle", "revision"].includes(kind) ? `<button class="brick blue" type="button" id="again">Bat again</button>` : ""}
       <button class="brick green" type="button" id="pav">Back to the pavilion</button></div>
     </div></div></div>`;

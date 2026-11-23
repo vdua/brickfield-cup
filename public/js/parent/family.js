@@ -30,6 +30,7 @@ export async function settings() {
   renderTabs("settings");
   if (!ctx.OV) ctx.OV = await api("/parent/overview");
   const s = ctx.OV.settings;
+  const holidays = await api("/parent/holidays");
   main.innerHTML = `<section class="card" style="max-width:640px"><h2>Settings</h2><p class="sub">The week moves on automatically every Monday from the start date. Set an override to hold or skip a week (0 = automatic).</p>
   <form id="sf" style="display:grid;gap:12px">
     <label class="field">His name (shown in the app)<input name="player_name" value="${esc(s.player_name)}"></label>
@@ -37,8 +38,15 @@ export async function settings() {
     <label class="field">Plan start date (a Monday)<input name="start_date" type="date" value="${esc(s.start_date)}"></label>
     <label class="field">Week override (currently week ${ctx.OV.week})<input name="week_override" type="number" min="0" max="19" value="${esc(s.week_override)}"></label>
     <label class="field">Daily goal, minutes<input name="daily_goal_min" type="number" min="5" max="180" value="${esc(s.daily_goal_min)}"></label>
+    <label class="field">Weekly rest day (no play, streak safe)<select name="rest_days">${[["5", "Friday"], ["6", "Saturday"], ["0", "Sunday"], ["", "None"]].map(([v, n]) => `<option value="${v}" ${String(s.rest_days ?? "5") === v ? "selected" : ""}>${n}</option>`).join("")}</select></label>
     <div><button class="btn green" type="submit">Save</button></div>
-  </form></section>`;
+  </form></section>
+  <section class="card" style="max-width:640px;margin-top:16px"><h2>Holidays</h2><p class="sub">He cannot play on a holiday, and it never breaks his partnership streak. Add a day before it happens, or the day after to protect a missed day.</p>
+    <form id="hf" class="filters" style="display:flex;gap:8px;flex-wrap:wrap"><input name="day" type="date" required><input name="note" placeholder="Reason (optional)" maxlength="60" style="flex:1 1 160px"><button class="btn" type="submit">Add</button></form>
+    <table style="margin-top:10px"><tbody>${holidays.map((h) => `<tr><td>${esc(h.day)}</td><td>${esc(h.note || "")}</td><td><button class="btn sm light" type="button" data-hd="${esc(h.day)}">Remove</button></td></tr>`).join("") || '<tr><td class="sub">No holidays set.</td></tr>'}</tbody></table>
+  </section>`;
+  main.querySelector("#hf").addEventListener("submit", async (e) => { e.preventDefault(); try { await api("/parent/holidays", { body: { day: e.target.day.value, note: e.target.note.value } }); toast("Holiday added", "ok"); settings(); } catch (err) { toast(err.message, "error"); } });
+  main.querySelectorAll("[data-hd]").forEach((b) => b.addEventListener("click", async () => { await api(`/parent/holidays/${b.dataset.hd}`, { method: "DELETE" }); toast("Removed", "ok"); settings(); }));
   main.querySelector("#sf").addEventListener("submit", async (e) => {
     e.preventDefault();
     try { await api("/parent/settings", { body: Object.fromEntries(new FormData(e.target)) }); ctx.OV = null; toast("Saved", "ok"); settings(); } catch (err) { toast(err.message, "error"); }

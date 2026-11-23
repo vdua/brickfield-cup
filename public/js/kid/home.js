@@ -4,13 +4,14 @@ import { app, bar, ctx, KIND, TASK_COLORS, TIPS } from "./state.js";
 
 // ---------- top scoreboard ----------
 export function renderBar() {
-  const t = ctx.S.totals;
+  const t = ctx.S.totals, reg = ctx.S.regularity;
   const initials = (ctx.S.team || "BB").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   bar.innerHTML = `
     <div class="team"><span class="crest">${esc(initials)}</span><div><b>${esc(ctx.S.team)}</b><small>Captain ${esc(ctx.S.player)}</small></div></div>
     <div class="stat"><small>Total runs</small><b class="led">${t.runs}</b></div>
     <div class="stat"><small>Runs to spend</small><b class="led">${t.wallet}</b></div>
-    <div class="stat"><small>Partnership</small><b class="led">${ctx.S.streak} ${ctx.S.streak === 1 ? "day" : "days"}</b></div>
+    <div class="stat"><small>Partnership</small><b class="led">${ctx.S.streak} ${ctx.S.streak === 1 ? "day" : "days"}</b>
+      <small>${reg.rest ? "Rest day" : reg.nextBonus ? `+${reg.nextBonus} run${reg.nextBonus === 1 ? "" : "s"} today` : "Bonus earned"} · ${reg.wicketsLeft} wkts left</small></div>
     <button class="iconbtn" id="snd" type="button" aria-pressed="${sound.on}">${sound.on ? "Sound on" : "Sound off"}</button>
     <button class="iconbtn" id="logout" type="button">Log out</button>`;
   bar.querySelector("#snd").onclick = () => { sound.on = !sound.on; renderBar(); logEvent("sound_toggle", sound.on ? "on" : "off"); };
@@ -34,6 +35,7 @@ export async function home() {
   const w = ctx.S.thisWeek;
 
   app.innerHTML = `<main class="home">
+    ${ctx.S.regularity.rest ? `<section class="panel span2"><h2>Rest day</h2><p class="sub" style="margin:0">No innings today (${esc(ctx.S.regularity.rest)}). Your partnership is safe. Back on the next working day!</p></section>` : ""}
     <section class="panel stadium">
       <div class="art" data-asset="/assets/stadium-${st.stage}.webp" aria-label="${esc(cur.name)}">${stadiumSVG(st.stage, ctx.S.totals.runs)}</div>
       <div class="info">
