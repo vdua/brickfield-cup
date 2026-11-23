@@ -5,4 +5,4 @@ compatibility_date = "2025-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "brickfield-db"
-database_id = "PASTE-YOUR-D1-DATABASE-ID-HERE"
+database_id = "1bf914ac-7e03-4ab1-a559-c3299d8f3898"

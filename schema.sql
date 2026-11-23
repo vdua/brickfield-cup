@@ -15,9 +15,27 @@ CREATE TABLE IF NOT EXISTS questions (
   options    TEXT,                                -- JSON array for multiple choice, else NULL
   method     TEXT,
   active     INTEGER NOT NULL DEFAULT 1,
+  worksheet_id INTEGER,                           -- set when the question belongs to a daily worksheet
   created_at TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_q_kind_week ON questions(kind, week, active);
+CREATE INDEX IF NOT EXISTS idx_q_worksheet ON questions(worksheet_id);
+
+-- A daily worksheet: a set of questions (ordered by question id) plus an optional printable PDF with an OMR sheet.
+CREATE TABLE IF NOT EXISTS worksheets (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  title      TEXT    NOT NULL,
+  set_date   TEXT    NOT NULL,                    -- IST day the worksheet is for, YYYY-MM-DD
+  week       INTEGER NOT NULL DEFAULT 0,
+  active     INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT    NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_w_date ON worksheets(set_date, active);
+
+CREATE TABLE IF NOT EXISTS worksheet_files (
+  worksheet_id INTEGER PRIMARY KEY,
+  pdf_base64   TEXT NOT NULL                      -- kept in D1 (row limit 2 MB), so no R2 bucket is needed
+);
 
 CREATE TABLE IF NOT EXISTS sessions (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -32,7 +50,9 @@ CREATE TABLE IF NOT EXISTS sessions (
   wickets      INTEGER NOT NULL DEFAULT 0,
   duration_s   INTEGER NOT NULL DEFAULT 0,
   away_s       INTEGER NOT NULL DEFAULT 0,        -- seconds the tab was hidden during the session
-  away_count   INTEGER NOT NULL DEFAULT 0
+  away_count   INTEGER NOT NULL DEFAULT 0,
+  source       TEXT    NOT NULL DEFAULT 'app',    -- app | paper (answers entered from an OMR sheet)
+  worksheet_id INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_s_week ON sessions(week, kind);
 CREATE INDEX IF NOT EXISTS idx_s_ended ON sessions(ended_at);
@@ -46,6 +66,7 @@ CREATE TABLE IF NOT EXISTS attempts (
   time_ms     INTEGER NOT NULL DEFAULT 0,
   runs        INTEGER NOT NULL DEFAULT 0,
   mistake     TEXT,                               -- careless | method | misread | guess
+  skipped     INTEGER NOT NULL DEFAULT 0,         -- 1 = left blank or never reached
   created_at  TEXT    NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_a_session ON attempts(session_id);
