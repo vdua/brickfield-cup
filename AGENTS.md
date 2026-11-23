@@ -30,3 +30,6 @@ Docs live behind [docs/catalog.md](docs/catalog.md). Check it before searching t
 - Database is D1 via the `env.DB` binding; the Node test server must keep emulating that interface.
 - Config comes from `env` (`SESSION_SECRET`, `KID_PIN`, `PARENT_PIN`), never from globals or files.
 - Free-tier limits apply: keep requests short, avoid unbounded queries, batch D1 writes.
+
+## Git workflow
+- Never commit directly to `main`. Create a branch, push it, and raise a PR to `main`.
