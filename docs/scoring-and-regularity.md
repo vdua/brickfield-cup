@@ -5,7 +5,7 @@ A correct answer earns runs by difficulty: easy 2, medium 4, hard 6 (`RUNS_FOR` 
 
 ## Regularity bonus (`lib/api/streak.js`)
 - A **working day** is a day that is not a rest day, not a holiday, and has a playable mission scheduled on it (a published slot whose questions or worksheet exist). Days with nothing published, or only slots with no questions yet, are not working days.
-- **Replay never counts**: it is not a mission, so it does not extend the streak, pay the bonus or add wickets, and it can be played any day he has mistakes.
+- **Replay never counts**: it is revision (the answer is shown in the session), so it pays **0 runs** and does not extend the streak, pay the bonus or add wickets, and it can be played any day he has mistakes.
 - Paid once per working day, on the first finished mission session of the day: day 1 of a streak 1 run, day 2 2 runs ... capped at **6** runs a day.
 - Stored in `daily_bonus` (one row per day), so changing the rules later never rewrites past totals. Totals add it to session runs (`totals.bonus`).
 - A missed **working** day resets the streak to 0. Rest days, holidays and days with nothing playable scheduled are skipped: they never break it. A catch-up played on a day that is not a working day does not count for the streak either.

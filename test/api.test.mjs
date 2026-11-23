@@ -118,6 +118,8 @@ assert.equal(fin.bonus.runs, 0); // nothing published, so today is not a working
 	assert.ok(s.data.questions.length <= 5 && s.data.questions.every((q) => wrongIds.has(q.id)), 'only questions he got wrong');
 	const before = (await call('kid', 'GET', '/api/state')).data;
 	const f = await answerAll(s.data);
+	assert.equal(f.session.runs, 0, 'replay pays no runs');
+	assert.equal(f.totals.runs, before.totals.runs, 'replay leaves total runs unchanged');
 	assert.equal(f.bonus.runs, 0, 'replay never pays the regularity bonus');
 	const after = (await call('kid', 'GET', '/api/state')).data;
 	assert.deepEqual([after.streak, after.regularity.wicketsLeft], [before.streak, before.regularity.wicketsLeft], 'replay does not touch the streak or its wickets');
