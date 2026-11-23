@@ -19,7 +19,7 @@ Weekly format (30 questions a week, from `weekly-content`): 6 `before` + 12 `pra
 | `worksheet` | Saturday Match (paper or on-screen worksheet) | Questions attached to a worksheet, see [worksheets.md](worksheets.md) |
 
 ## Weekly missions (slots)
-Code: `lib/api/slots.js` (plan, statuses, rules), `lib/api/kid-state.js` (what the kid sees). The parent publishes a week once (dashboard, **Week plan** tab, or `POST /api/parent/plan/:week/publish` with optional `{ days: { slot: "YYYY-MM-DD" } }`). Until a week is published the kid sees it but can play none of it. Weeks start on Monday; default days:
+Code: `lib/api/slots.js` (plan, statuses, rules), `lib/api/kid-state.js` (what the kid sees). The parent publishes a week once (dashboard, **Week plan** tab, or `POST /api/parent/plan/:week/publish` with optional `{ days: { slot: "YYYY-MM-DD" } }`), which creates the standard 7 missions below. Until a week is published the kid can play none of it. Weeks start on Monday; default days:
 
 | Slot | Kind | Default day |
 | --- | --- | --- |
@@ -29,6 +29,12 @@ Code: `lib/api/slots.js` (plan, statuses, rules), `lib/api/kid-state.js` (what t
 | Match | `worksheet` (the week's worksheet, on screen or by paper submit) | Saturday |
 | Super over | `after` | Sunday |
 
+A mission belongs to a plan week (its questions come from that week) but its date is the parent's to set, so it can be moved into a later week for a holiday, sickness or exams. It keeps its week's questions and is not `late`, because lateness is measured against its current date.
+- **Nets and Spin puzzle** are repeatable: `POST /api/parent/plan/:week/add { kind: "nets"|"puzzle", day }` adds one (`nets4`, `puzzle2`, ...). The kid sees them labelled by date.
+- **Toss, Match and Super over** are one per week, labelled by week ("Toss · Week 2"), because each week has its own questions or worksheet. Two Tosses in one calendar week means two plan weeks' Tosses. The Toss may not be dated after the same week's Super over.
+- Any unfinished mission can be dropped with `DELETE /api/parent/plan/:week/:slot` (finished ones stay in his record: 409). Re-publishing a published week only changes the dates it is sent.
+- Slot names: `nets<n>`, `puzzle` / `puzzle<n>`, `toss`, `match`, `over` (`slotInfo` in `slots.js` derives the kind from the name).
+
 Replay (`revision`) is an optional extra, not a slot, and can be played any day, but only while he has unfixed mistakes. With none, `POST /api/session/start` returns 404 and the home button is disabled (`replay.due` in `/api/state`).
 
 Rules, all enforced in `POST /api/session/start` (the client only sends `slot` and `week`; the server decides the kind and today from its own clock, so changing the device date does nothing):
@@ -36,7 +42,7 @@ Rules, all enforced in `POST /api/session/start` (the client only sends `slot` a
 - A missed slot can be caught up on a later day. The mission then counts as **failed** (`late: true`). The missed day also broke the streak (the regularity bonus), as before. Nothing else is lost.
 - Daily allowance: he can start as many missions today as the parent scheduled on today's date (at least 1; the Saturday Match worksheet is exempt). A catch-up uses up one of today's allowance. Put two missions on one date and he can play both that day; a restart of an unfinished try doesn't count twice.
 - Badge **Full Match**: every slot of a week that could be played was finished on its own day (skipped and no-content slots do not count against him).
-- Last week's missed slots show on the kid's home screen so they can be caught up after the week rolls over.
+- The kid's home shows every mission of any plan week dated in the next 7 days (locked until its day) plus every earlier one he hasn't finished (`missions` in `/api/state`, built by `upcoming()`). Nothing disappears when the calendar week rolls over.
 
 ## Content coverage (data/questions.json, 126 questions)
 - **Week 1 (no fixed topic, so Sunday's result picks week 2's topic):** 6 `before` + 6 `after` (copies of diagnostic questions, paired by topic, half multiple choice), 12 free-text `practice` (8 more diagnostic copies plus 4 number-sense), and the 10 any-week puzzles (5 multiple choice) cover 6 puzzles per session. The 20 original `diagnostic` rows are kept.

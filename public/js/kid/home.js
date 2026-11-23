@@ -21,7 +21,7 @@ export function renderBar() {
 // ---------- weekly missions ----------
 const dayName = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
 const STATE = {
-  open: (x) => ["Play today", ""], missed: () => ["Missed. Play it now", "late"], locked: (x) => [`Opens ${dayName(x.day)}`, "locked"],
+  open: () => ["Play today", ""], missed: () => ["Missed. Play it now", "late"], locked: (x) => [`Opens ${dayName(x.day)}`, "locked"],
   done: (x) => [x.late ? "Done late" : "Done on time", "done"], skip: () => ["Rest day", "na"], na: () => ["No questions yet", "na"], unpublished: (x) => [`Day: ${dayName(x.day)}`, "locked"],
 };
 function taskHtml(x) {
@@ -30,7 +30,7 @@ function taskHtml(x) {
   const wk = x.week || ctx.S.week;
   return `<button class="task ${cls}" type="button" data-kind="${x.kind}" data-slot="${x.slot}" data-week="${wk}" data-status="${x.status}" data-why="${esc(text)}" ${playable ? "" : "aria-disabled='true'"} style="--c:${TASK_COLORS[x.kind]}">
     ${x.status === "done" ? `<span class="tick" aria-label="done">✓</span>` : ""}
-    <b>${esc(x.label)}${x.week ? ` <small>(week ${x.week})</small>` : ""}</b><small>${esc(x.hint)}</small>
+    <b>${esc(x.label)} <small>${x.base === "nets" || x.base === "puzzle" ? dayName(x.day) : `Week ${wk}`}</small></b><small>${esc(x.hint)}</small>
     ${x.score !== null && x.total ? `<small>Score: ${x.score}/${x.total}</small>` : ""}
     <span class="when">${esc(text)}</span>
   </button>`;
@@ -54,7 +54,7 @@ export async function home() {
   const fromRuns = cur.runs, toRuns = next ? next.runs : cur.runs;
   const pct = next ? Math.min(1, (ctx.S.totals.runs - fromRuns) / (toRuns - fromRuns)) : 1;
   const on = Math.round(pct * 20);
-  const msg = ctx.S.message, plan = ctx.S.plan;
+  const msg = ctx.S.message, plan = ctx.S.plan, missions = ctx.S.missions;
   const tip = TIPS[new Date().getDate() % TIPS.length];
   const goalPct = Math.min(100, Math.round((ctx.S.todayMin / Math.max(1, ctx.S.goalMin)) * 100));
   const w = ctx.S.thisWeek;
@@ -88,8 +88,8 @@ export async function home() {
 
     <section class="panel span2">
       <h2>Week ${ctx.S.week}: ${esc(w.match)}</h2>
-      <p class="sub">${esc(w.topic)} · ${esc(w.phase)} phase. ${plan.published ? "One mission a day. Play it on its day to keep your partnership and win the Full Match badge." : "Waiting for Dad to publish this week. Then each mission opens on its day."}</p>
-      <div class="mission">${[...ctx.S.carry, ...plan.slots].map(taskHtml).join("")}${replayHtml()}</div>
+      <p class="sub">${esc(w.topic)} · ${esc(w.phase)} phase. ${missions.length ? "Your missions for the next 7 days. Each opens on its day: play it then to keep your partnership and win the Full Match badge." : "Waiting for Dad to publish this week. Then each mission opens on its day."}</p>
+      <div class="mission">${(missions.length ? missions : plan.slots).map(taskHtml).join("")}${replayHtml()}</div>
     </section>
 
     <section class="panel span2">
