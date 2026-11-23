@@ -128,7 +128,7 @@ export async function submit(q, given) {
 	o.className = 'overlay';
 	const last = ctx.I.i === ctx.I.qs.length - 1;
 	if (r.correct) {
-		let word = ['TWO RUNS!', 'two'];
+		let word = ctx.I.kind === 'revision' ? ['FIXED IT!', 'two'] : ['TWO RUNS!', 'two'];
 		let sound = 'hit';
 		if (r.runs >= 6) { word = ['SIX!', 'six']; sound = 'six'; } else if (r.runs >= 4) { word = ['FOUR!', 'four']; sound = 'four'; }
 		sfx(sound);
