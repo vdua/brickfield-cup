@@ -37,7 +37,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .login .panel { display: grid; place-items: center; padding: 32px 20px; }
 .login h1 { font-weight: 800; font-size: clamp(30px, 4vw, 40px); line-height: 1.1; letter-spacing: -.01em; margin: 0 0 6px; color: var(--board); text-wrap: balance; }
 .login .lead { margin: 0 0 22px; color: var(--muted); font-size: 18px; }
-.who { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+.login .swap { display: inline-block; margin-top: 6px; color: var(--muted); font-size: 14px; }
 .pinbox { display: flex; gap: 12px; justify-content: center; margin: 8px 0 16px; }
 .pinbox span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); }
 .pinbox span.on { background: var(--ink); }

@@ -8,18 +8,26 @@ async function enterPin(page, pin) {
   await page.locator('#pad button[data-k="Go"]').click();
 }
 
+async function openLogin(page, path) {
+  await page.goto(path);
+  await expect(page.getByRole("heading", { name: "The Brickfield Cup" })).toBeVisible();
+}
+
 test.beforeEach(async ({ page, baseURL }) => {
   // Block external requests (Google Fonts) so tests are fast and offline-safe.
   await page.route((url) => url.origin !== new URL(baseURL).origin, (route) => route.abort());
-  await page.goto("/");
-  await expect(page.getByRole("heading", { name: "The Brickfield Cup" })).toBeVisible();
+  await openLogin(page, "/");
 });
 
-test("login page renders keypad and role toggle", async ({ page }) => {
+test("player and parent have separate login pages", async ({ page }) => {
   await expect(page.locator("#pad button")).toHaveCount(12);
-  await expect(page.locator("#whoLabel")).toHaveText("Player PIN");
-  await page.locator("#asParent").click();
-  await expect(page.locator("#whoLabel")).toHaveText("Parent PIN");
+  await expect(page.getByText("Player PIN")).toBeVisible();
+  await expect(page.getByText("Parent PIN")).toHaveCount(0);
+  await page.getByRole("link", { name: "Parent? Sign in here" }).click();
+  await expect(page).toHaveURL(/\/parent-login$/);
+  await expect(page.getByText("Parent PIN")).toBeVisible();
+  await page.getByRole("link", { name: "Back to the player login" }).click();
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test("student logs in with PIN and logs out", async ({ page }) => {
@@ -32,12 +40,12 @@ test("student logs in with PIN and logs out", async ({ page }) => {
 });
 
 test("parent logs in with PIN and logs out", async ({ page }) => {
-  await page.locator("#asParent").click();
+  await openLogin(page, "/parent-login");
   await enterPin(page, PARENT_PIN);
   await expect(page).toHaveURL(/\/parent$/);
   await expect(page.locator("#who")).toHaveText("Parent dashboard");
   await page.locator("#logout").click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/parent-login$/);
   await expect(page.locator("#pad")).toBeVisible();
 });
 
@@ -53,9 +61,15 @@ test("wrong PIN shows error and stays on login", async ({ page }) => {
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("kid PIN is rejected for parent role", async ({ page }) => {
-  await page.locator("#asParent").click();
+test("kid PIN is rejected on the parent login", async ({ page }) => {
+  await openLogin(page, "/parent-login");
   await enterPin(page, KID_PIN);
+  await expect(page.locator("#err")).not.toBeEmpty();
+  await expect(page).toHaveURL(/\/parent-login$/);
+});
+
+test("parent PIN is rejected on the player login", async ({ page }) => {
+  await enterPin(page, PARENT_PIN);
   await expect(page.locator("#err")).not.toBeEmpty();
   await expect(page).toHaveURL(/\/$/);
 });
@@ -71,5 +85,5 @@ test("unauthenticated /kid and /parent bounce to login", async ({ page }) => {
   await page.goto("/kid");
   await expect(page).toHaveURL(/\/$/);
   await page.goto("/parent");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/parent-login$/);
 });
