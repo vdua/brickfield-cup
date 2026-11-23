@@ -49,7 +49,7 @@ module.exports = {
 		},
 		{
 			// Node-side tooling and tests
-			files: ['scripts/**/*.{js,mjs}', 'test/**/*.{js,mjs}'],
+			files: ['scripts/**/*.{js,mjs}', 'test/**/*.{js,mjs}', 'playwright.config.js'],
 			env: { node: true },
 			rules: { 'no-console': 'off', 'import/no-extraneous-dependencies': 'off' },
 		},

@@ -8,7 +8,11 @@ export const MISTAKE = { careless: 'Silly slip', method: "Didn't know how", misr
 export const MCOL = { careless: '#f08c00', method: '#1c7ed6', misread: '#e03131', guess: '#7048e8', untagged: '#ced4da' };
 export const pct = (a, b) => (b ? Math.round((a / b) * 100) : null);
 export const score = (x) => (x ? `${x.score}/${x.total}` : '—');
-export const level = (p) => (p === null ? '' : p >= 80 ? 'good' : p >= 60 ? 'mid' : 'bad');
+export const level = (p) => {
+	if (p === null) return '';
+	if (p >= 80) return 'good';
+	return p >= 60 ? 'mid' : 'bad';
+};
 
 export function renderTabs(active) {
 	tabs.innerHTML = TABS.map(([k, l]) => `<a href="#${k}" ${k === active ? 'aria-current="page"' : ''}>${l}${k === 'family' && ctx.pending ? ` <span class="dot">${ctx.pending}</span>` : ''}</a>`).join('');

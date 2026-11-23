@@ -10,7 +10,8 @@ async function call(who, method, path, body) {
 	const r = await handle(new Request(`http://localhost${path}`, {
 		method, headers: { 'content-type': 'application/json', cookie: cookie[who] || '' }, body: body ? JSON.stringify(body) : undefined,
 	}), env);
-	const sc = r.headers.get('set-cookie'); if (sc && who) cookie[who] = sc.split(';')[0];
+	const sc = r.headers.get('set-cookie');
+	if (sc && who) [cookie[who]] = sc.split(';');
 	return { status: r.status, data: await r.json() };
 }
 const addDay = (d, n) => new Date(Date.parse(`${d}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
@@ -25,7 +26,15 @@ await call('parent', 'POST', '/api/parent/settings', { rest_days: '' }); // no w
 	const missions = async () => (await call('kid', 'GET', '/api/state')).data.missions.filter((m) => m.week === 7);
 	assert.equal((await pub7({ nets9x: t0 })).status, 400, 'unknown mission name');
 	assert.equal((await pub7({ toss: addDay(t0, 6), over: addDay(t0, 5) })).status, 400, 'Toss must not come after the Super over');
-	assert.equal((await pub7({ nets1: t0, nets2: addDay(t0, 1), nets3: addDay(t0, 2), puzzle: addDay(t0, 3), toss: addDay(t0, 5), match: addDay(t0, 5), over: addDay(t0, 6) })).status, 200);
+	assert.equal((await pub7({
+		nets1: t0,
+		nets2: addDay(t0, 1),
+		nets3: addDay(t0, 2),
+		puzzle: addDay(t0, 3),
+		toss: addDay(t0, 5),
+		match: addDay(t0, 5),
+		over: addDay(t0, 6),
+	})).status, 200);
 	assert.equal((await call('parent', 'POST', '/api/parent/plan/7/add', { kind: 'toss', day: t0 })).status, 400, 'one Toss per week');
 	const added = (await call('parent', 'POST', '/api/parent/plan/7/add', { kind: 'nets', day: addDay(t0, 4) })).data;
 	assert.deepEqual(added.slots.filter((x) => x.base === 'nets').map((x) => x.slot), ['nets1', 'nets2', 'nets3', 'nets4']);

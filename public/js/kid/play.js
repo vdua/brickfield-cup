@@ -5,15 +5,34 @@ import { renderBar } from './home.js';
 
 // ---------- innings ----------
 export async function play(kind, slot = '', week = 0) {
-	const my = ++ctx.nav;
+	ctx.nav += 1;
+	const my = ctx.nav;
 	app.innerHTML = `<div class="pitch"><div class="loading">Walking out to bat…</div></div>`;
 	let d;
-	try { d = await api('/session/start', { body: { kind, slot, week } }); } catch (e) { toast(e.message, 'error'); location.hash = 'home'; return; }
+	try { d = await api('/session/start', { body: { kind, slot, week } }); } catch (e) { toast(e.message, 'error'); window.location.hash = 'home'; return; }
 	if (my !== ctx.nav) return;
 	const prior = d.prior || []; // balls already played in a retired innings are final
-	ctx.I = { id: d.session.id, kind: d.session.kind, qs: d.questions, prior, i: 0, res: [], runs: prior.reduce((a, r) => a + (r.correct ? r.runs : 0), 0), wk: prior.filter((r) => !r.correct).length, away: 0, awayCount: 0, hiddenAt: null, t0: Date.now(), checked: false, timer: null };
-	if (!ctx.S) { try { ctx.S = await api('/state'); renderBar(); } catch (e) {} }
-	if (!d.questions.length) return finish(false); // every ball was already played, only the finish was missed
+	ctx.I = {
+		id: d.session.id,
+		kind: d.session.kind,
+		qs: d.questions,
+		prior,
+		i: 0,
+		res: [],
+		runs: prior.reduce((a, r) => a + (r.correct ? r.runs : 0), 0),
+		wk: prior.filter((r) => !r.correct).length,
+		away: 0,
+		awayCount: 0,
+		hiddenAt: null,
+		t0: Date.now(),
+		checked: false,
+		timer: null,
+	};
+	if (!ctx.S) { try { ctx.S = await api('/state'); renderBar(); } catch (e) { /* the bar stays empty until home loads */ } }
+	if (!d.questions.length) { // every ball was already played, only the finish was missed
+		await finish(false);
+		return;
+	}
 	if (prior.length) toast(`Welcome back. ${prior.length} ball${prior.length === 1 ? '' : 's'} already played, ${d.questions.length} to go.`, 'ok');
 	ball();
 }
@@ -67,10 +86,14 @@ export function ball() {
 	app.querySelector('#qf').addEventListener('submit', (e) => {
 		e.preventDefault();
 		const given = q.options ? picked : app.querySelector('#ans').value.trim();
-		if (given === null || given === '') return toast('Pick or type an answer first!');
+		if (given === null || given === '') { toast('Pick or type an answer first!'); return; }
 		const secs = (Date.now() - ctx.I.t0) / 1000;
 		// careless-mistake guard: a very quick answer to a harder ball gets one gentle re-check
-		if (!ctx.I.checked && q.difficulty >= 2 && secs < 12) { ctx.I.checked = true; return recheck(() => submit(q, given)); }
+		if (!ctx.I.checked && q.difficulty >= 2 && secs < 12) {
+			ctx.I.checked = true;
+			recheck(() => submit(q, given));
+			return;
+		}
 		submit(q, given);
 	});
 }
@@ -88,18 +111,27 @@ export function recheck(go) {
 
 export async function submit(q, given) {
 	clearInterval(ctx.I.timer);
-	const time_ms = Date.now() - ctx.I.t0;
-	app.querySelectorAll('button, input').forEach((x) => (x.disabled = true));
+	const timeMs = Date.now() - ctx.I.t0;
+	const setDisabled = (v) => app.querySelectorAll('button, input').forEach((x) => { x.disabled = v; });
+	setDisabled(true);
 	let r;
-	try { r = await api(`/session/${ctx.I.id}/answer`, { body: { question_id: q.id, given, time_ms } }); } catch (e) { toast(e.message, 'error'); app.querySelectorAll('button, input').forEach((x) => (x.disabled = false)); return; }
+	try {
+		r = await api(`/session/${ctx.I.id}/answer`, { body: { question_id: q.id, given, time_ms: timeMs } });
+	} catch (e) {
+		toast(e.message, 'error');
+		setDisabled(false);
+		return;
+	}
 	ctx.I.res[ctx.I.i] = r;
 	if (r.correct) ctx.I.runs += r.runs; else ctx.I.wk += 1;
 	const o = document.createElement('div');
 	o.className = 'overlay';
 	const last = ctx.I.i === ctx.I.qs.length - 1;
 	if (r.correct) {
-		const word = r.runs >= 6 ? ['SIX!', 'six'] : r.runs >= 4 ? ['FOUR!', 'four'] : ['TWO RUNS!', 'two'];
-		sfx(r.runs >= 6 ? 'six' : r.runs >= 4 ? 'four' : 'hit');
+		let word = ['TWO RUNS!', 'two'];
+		let sound = 'hit';
+		if (r.runs >= 6) { word = ['SIX!', 'six']; sound = 'six'; } else if (r.runs >= 4) { word = ['FOUR!', 'four']; sound = 'four'; }
+		sfx(sound);
 		if (r.runs >= 6) confetti();
 		o.innerHTML = `<div class="result"><div class="ballfly"></div><div class="shout ${word[1]}">${word[0]}</div>
       <p style="margin:0">Spot on! <b>${esc(r.answer)}</b> is right.</p>
@@ -122,7 +154,7 @@ export async function submit(q, given) {
       </div></div>`;
 		document.body.appendChild(o);
 		o.querySelectorAll('[data-m]').forEach((b) => b.addEventListener('click', async () => {
-			o.querySelectorAll('button').forEach((x) => (x.disabled = true));
+			o.querySelectorAll('button').forEach((x) => { x.disabled = true; });
 			await api(`/attempt/${r.attempt_id}/mistake`, { body: { type: b.dataset.m } }).catch(() => {});
 			o.remove(); advance();
 		}));
@@ -130,7 +162,7 @@ export async function submit(q, given) {
 }
 
 export function advance() {
-	if (ctx.I.i < ctx.I.qs.length - 1) { ctx.I.i++; ball(); } else finish(false);
+	if (ctx.I.i < ctx.I.qs.length - 1) { ctx.I.i += 1; ball(); } else finish(false);
 }
 
 export function confirmQuit() {
@@ -148,7 +180,7 @@ function retire() {
 	clearInterval(ctx.I.timer);
 	ctx.I = null;
 	toast('Retired. Start the mission again to face the remaining balls.', 'ok');
-	location.hash = 'home';
+	window.location.hash = 'home';
 }
 
 export async function finish(quit) {
@@ -156,7 +188,7 @@ export async function finish(quit) {
 	if (ctx.I.hiddenAt) { ctx.I.away += (Date.now() - ctx.I.hiddenAt) / 1000; ctx.I.hiddenAt = null; }
 	app.innerHTML = `<div class="pitch"><div class="loading">Walking back to the pavilion…</div></div>`;
 	let f;
-	try { f = await api(`/session/${ctx.I.id}/finish`, { body: { away_s: Math.round(ctx.I.away), away_count: ctx.I.awayCount } }); } catch (e) { toast(e.message, 'error'); location.hash = 'home'; return; }
+	try { f = await api(`/session/${ctx.I.id}/finish`, { body: { away_s: Math.round(ctx.I.away), away_count: ctx.I.awayCount } }); } catch (e) { toast(e.message, 'error'); window.location.hash = 'home'; return; }
 	const played = [...ctx.I.prior, ...ctx.I.res.filter(Boolean)];
 	const s = f.session; const
 		faced = played.length;
@@ -164,6 +196,9 @@ export async function finish(quit) {
 	const stageUp = f.stageAfter > f.stageBefore;
 	const { kind } = ctx.I;
 	ctx.I = null;
+	let verdict = 'Great knock!';
+	if (s.score === s.total && s.total) verdict = 'Not out and perfect!';
+	else if (s.wickets) verdict = 'Every wicket is a lesson. Your mistakes go to Replay.';
 	app.innerHTML = `<div class="pitch"><div class="summary">
     <div class="board">
       <div style="color:#adb5bd;font-weight:700">${quit ? 'Retired' : 'Innings over'} · ${esc(KIND[kind]?.name || kind)}</div>
@@ -180,13 +215,13 @@ export async function finish(quit) {
     ${stageUp ? `<div class="panel unlock"><div class="shout">New build: ${esc(f.stages[f.stageAfter].name)}!</div>
       <div class="art" data-asset="/assets/stadium-${f.stageAfter}.webp" style="border-radius:14px;overflow:hidden">${stadiumSVG(f.stageAfter, f.totals.runs)}</div></div>` : ''}
     <div class="panel" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
-      <div><b>${s.score === s.total && s.total ? 'Not out and perfect!' : s.wickets ? 'Every wicket is a lesson. Your mistakes go to Replay.' : 'Great knock!'}</b><br>
+      <div><b>${verdict}</b><br>
       <span class="sub">${f.bonus?.runs ? `+${f.bonus.runs} regularity run${f.bonus.runs === 1 ? '' : 's'} for showing up. ` : ''}Total runs now: ${f.totals.runs}</span></div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">${kind === 'revision' ? `<button class="brick blue" type="button" id="again">Bat again</button>` : ''}
       <button class="brick green" type="button" id="pav">Back to the pavilion</button></div>
     </div></div></div>`;
 	hydrateAssets(app);
 	if (f.newBadges.length || stageUp) { sfx('badge'); confetti(160); }
-	app.querySelector('#pav').onclick = () => { location.hash = 'home'; };
+	app.querySelector('#pav').onclick = () => { window.location.hash = 'home'; };
 	app.querySelector('#again')?.addEventListener('click', () => play(kind));
 }

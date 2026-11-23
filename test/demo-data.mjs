@@ -10,12 +10,23 @@ const env = makeEnv(file);
 const bank = JSON.parse(readFileSync(new URL('../data/questions.json', import.meta.url)));
 let cookie = '';
 const call = async (method, path, body) => {
-	const r = await handle(new Request(`http://localhost${path}`, { method, headers: { 'content-type': 'application/json', cookie }, body: body ? JSON.stringify(body) : undefined }), env);
-	const sc = r.headers.get('set-cookie'); if (sc) cookie = sc.split(';')[0];
+	const r = await handle(new Request(`http://localhost${path}`, {
+		method,
+		headers: { 'content-type': 'application/json', cookie },
+		body: body ? JSON.stringify(body) : undefined,
+	}), env);
+	const sc = r.headers.get('set-cookie');
+	if (sc) [cookie] = sc.split(';');
 	return r.json();
 };
 await call('POST', '/api/login', { role: 'kid', pin: '1234' });
-const rnd = (() => { let s = 7; return () => ((s = (s * 16807) % 2147483647) / 2147483647); })();
+const rnd = (() => {
+	let s = 7;
+	return () => {
+		s = (s * 16807) % 2147483647;
+		return s / 2147483647;
+	};
+})();
 const { db } = env.DB;
 
 async function playSession(kind, week, skill, daysAgo, hour) {
@@ -24,13 +35,23 @@ async function playSession(kind, week, skill, daysAgo, hour) {
 	for (const q of st.questions) {
 		const src = bank.find((b) => b.q === q.prompt);
 		const right = rnd() < skill - (q.difficulty - 2) * 0.12;
-		const r = await call('POST', `/api/session/${st.session.id}/answer`, { question_id: q.id, given: right ? src.a : q.options ? String((Number(src.a) + 1) % q.options.length) : '7', time_ms: 25000 + rnd() * 150000 });
+		let wrong = '7';
+		if (q.options) wrong = String((Number(src.a) + 1) % q.options.length);
+		const r = await call('POST', `/api/session/${st.session.id}/answer`, {
+			question_id: q.id, given: right ? src.a : wrong, time_ms: 25000 + rnd() * 150000,
+		});
 		if (!r.correct) await call('POST', `/api/attempt/${r.attempt_id}/mistake`, { type: ['careless', 'careless', 'method', 'misread', 'guess'][Math.floor(rnd() * 5)] });
 	}
 	const away = rnd() < 0.3 ? Math.round(30 + rnd() * 200) : 0;
-	await call('POST', `/api/session/${st.session.id}/finish`, { away_s: away, away_count: away ? 1 + Math.floor(rnd() * 3) : 0 });
+	const awayCount = away ? 1 + Math.floor(rnd() * 3) : 0;
+	await call('POST', `/api/session/${st.session.id}/finish`, { away_s: away, away_count: awayCount });
 	// shift this session into the past
-	const shift = (iso) => { const d = new Date(iso); d.setUTCDate(d.getUTCDate() - daysAgo); d.setUTCHours(hour - 5, 30 + Math.floor(rnd() * 25)); return d.toISOString(); };
+	const shift = (iso) => {
+		const d = new Date(iso);
+		d.setUTCDate(d.getUTCDate() - daysAgo);
+		d.setUTCHours(hour - 5, 30 + Math.floor(rnd() * 25));
+		return d.toISOString();
+	};
 	const s = db.prepare('SELECT * FROM sessions WHERE id=?').get(st.session.id);
 	const start = shift(s.started_at); const
 		end = new Date(new Date(start).getTime() + st.questions.length * (60 + rnd() * 90) * 1000).toISOString();

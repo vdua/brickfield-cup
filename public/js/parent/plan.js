@@ -43,7 +43,7 @@ export async function plan(arg) {
       <table><thead><tr><th>Mission</th><th>Day</th><th>Status</th><th></th></tr></thead><tbody>${w.others.map(otherRow).join('')}</tbody></table>` : `<p class="sub">None. Missions of other weeks dated in this week, or missed and still owed, will be listed here.</p>`}
     ${w.published ? `<div style="margin-top:16px;display:flex;gap:8px;align-items:end;flex-wrap:wrap"><label class="field" style="margin:0">Add a mission on<input type="date" id="adday" value="${esc(w.slots.at(-1)?.day || '')}"></label>
       <button class="btn light" type="button" data-add="nets">Add Nets</button><button class="btn light" type="button" data-add="puzzle">Add Spin puzzle</button></div>` : ''}</section>`;
-	main.querySelector('#pw').onchange = (e) => { location.hash = `plan/${e.target.value}`; };
+	main.querySelector('#pw').onchange = (e) => { window.location.hash = `plan/${e.target.value}`; };
 	main.querySelector('#pf').addEventListener('submit', async (e) => {
 		e.preventDefault();
 		const byWeek = { [week]: {} }; // this week sends every date; other weeks only the ones that changed

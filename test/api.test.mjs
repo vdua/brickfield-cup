@@ -12,7 +12,8 @@ async function call(who, method, path, body) {
 	const r = await handle(new Request(`http://localhost${path}`, {
 		method, headers: { 'content-type': 'application/json', cookie: cookie[who] || '' }, body: body ? JSON.stringify(body) : undefined,
 	}), env);
-	const sc = r.headers.get('set-cookie'); if (sc && who) cookie[who] = sc.split(';')[0];
+	const sc = r.headers.get('set-cookie');
+	if (sc && who) [cookie[who]] = sc.split(';');
 	return { status: r.status, data: await r.json() };
 }
 
@@ -59,19 +60,19 @@ assert.equal((await call('kid', 'GET', '/api/state')).data.regularity.rest, 'hol
 assert.equal((await call('parent', 'DELETE', `/api/parent/holidays/${today}`)).status, 200);
 const none = () => null;
 const day = (n, wickets = 0) => ({ day: `2026-12-${String(n).padStart(2, '0')}`, wickets }); // 2026-12-01 is a Tuesday
-let r = replay([day(1), day(2), day(3)], none, '2026-12-03');
-assert.deepEqual([r.streak, [...r.dayBonus.values()]], [3, [1, 2, 3]]);
-r = replay([day(1), day(2), day(4)], none, '2026-12-04');
-assert.deepEqual([r.streak, [...r.dayBonus.values()]], [1, [1, 2, 1]]); // missed 3 Dec resets
+let rp = replay([day(1), day(2), day(3)], none, '2026-12-03');
+assert.deepEqual([rp.streak, [...rp.dayBonus.values()]], [3, [1, 2, 3]]);
+rp = replay([day(1), day(2), day(4)], none, '2026-12-04');
+assert.deepEqual([rp.streak, [...rp.dayBonus.values()]], [1, [1, 2, 1]]); // missed 3 Dec resets
 const friday = (d) => (new Date(`${d}T00:00:00Z`).getUTCDay() === 5 ? 'rest day' : null);
-r = replay([day(3), day(5)], friday, '2026-12-05'); // 4 Dec is a Friday: skipping it keeps the streak
-assert.deepEqual([r.streak, [...r.dayBonus.values()]], [2, [1, 2]]);
-r = replay(Array.from({ length: 9 }, (_, i) => day(i + 6)), none, '2026-12-14'); // days 6-14
-assert.deepEqual([...r.dayBonus.values()], [1, 2, 3, 4, 5, 6, 6, 6, 6]); // capped at 6
-r = replay([day(1, 6), day(2, 4)], none, '2026-12-02'); // 10 wickets reset it after the second innings
-assert.equal(r.streak, 0);
-r = replay([day(1, 6), day(2, 3)], none, '2026-12-03');
-assert.deepEqual([r.streak, r.wicketsLeft, r.nextBonus], [2, 1, 3]);
+rp = replay([day(3), day(5)], friday, '2026-12-05'); // 4 Dec is a Friday: skipping it keeps the streak
+assert.deepEqual([rp.streak, [...rp.dayBonus.values()]], [2, [1, 2]]);
+rp = replay(Array.from({ length: 9 }, (_, i) => day(i + 6)), none, '2026-12-14'); // days 6-14
+assert.deepEqual([...rp.dayBonus.values()], [1, 2, 3, 4, 5, 6, 6, 6, 6]); // capped at 6
+rp = replay([day(1, 6), day(2, 4)], none, '2026-12-02'); // 10 wickets reset it after the second innings
+assert.equal(rp.streak, 0);
+rp = replay([day(1, 6), day(2, 3)], none, '2026-12-03');
+assert.deepEqual([rp.streak, rp.wicketsLeft, rp.nextBonus], [2, 1, 3]);
 
 // state: nothing is playable until the parent publishes the week
 let st = (await call('kid', 'GET', '/api/state')).data;

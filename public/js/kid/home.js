@@ -8,16 +8,20 @@ export function renderBar() {
 		reg = ctx.S.regularity;
 	const initials = (ctx.S.team || 'BB').split(/\s+/).map((w) => w[0]).join('').slice(0, 2)
 		.toUpperCase();
+	let bonusText = 'Bonus earned';
+	if (reg.rest) bonusText = 'Rest day';
+	else if (reg.idle) bonusText = 'No bonus today';
+	else if (reg.nextBonus) bonusText = `+${reg.nextBonus} run${reg.nextBonus === 1 ? '' : 's'} today`;
 	bar.innerHTML = `
     <div class="team"><span class="crest">${esc(initials)}</span><div><b>${esc(ctx.S.team)}</b><small>Captain ${esc(ctx.S.player)}</small></div></div>
     <div class="stat"><small>Total runs</small><b class="led">${t.runs}</b></div>
     <div class="stat"><small>Runs to spend</small><b class="led">${t.wallet}</b></div>
     <div class="stat"><small>Partnership</small><b class="led">${ctx.S.streak} ${ctx.S.streak === 1 ? 'day' : 'days'}</b>
-      <small>${reg.rest ? 'Rest day' : reg.idle ? 'No bonus today' : reg.nextBonus ? `+${reg.nextBonus} run${reg.nextBonus === 1 ? '' : 's'} today` : 'Bonus earned'} · ${reg.wicketsLeft} wkts left</small></div>
+      <small>${bonusText} · ${reg.wicketsLeft} wkts left</small></div>
     <button class="iconbtn" id="snd" type="button" aria-pressed="${sound.on}">${sound.on ? 'Sound on' : 'Sound off'}</button>
     <button class="iconbtn" id="logout" type="button">Log out</button>`;
 	bar.querySelector('#snd').onclick = () => { sound.on = !sound.on; renderBar(); logEvent('sound_toggle', sound.on ? 'on' : 'off'); };
-	bar.querySelector('#logout').onclick = async () => { await api('/logout', { body: {} }).catch(() => {}); location.href = '/'; };
+	bar.querySelector('#logout').onclick = async () => { await api('/logout', { body: {} }).catch(() => {}); window.location.href = '/'; };
 }
 
 // ---------- weekly missions ----------
@@ -51,9 +55,14 @@ function replayHtml() {
 }
 
 // ---------- home ----------
+const weekState = (w) => {
+	if (w < ctx.S.week) return 'past';
+	return w === ctx.S.week ? 'now' : '';
+};
 export async function home() {
 	ctx.I = null;
-	const my = ++ctx.nav;
+	ctx.nav += 1;
+	const my = ctx.nav;
 	try { ctx.S = await api('/state'); } catch (e) { app.innerHTML = `<div class="loading" style="color:var(--ink)">${esc(e.message)}</div>`; return; }
 	if (my !== ctx.nav) return;
 	renderBar();
@@ -105,7 +114,7 @@ export async function home() {
     <section class="panel span2">
       <h2>The road to SASMO</h2>
       <p class="sub">19 matches. Each week is a new fixture.</p>
-      <div class="season" id="season">${ctx.S.roadmap.map((r) => `<div class="wk ${r.week < ctx.S.week ? 'past' : r.week === ctx.S.week ? 'now' : ''} ${r.week === 19 ? 'final' : ''}" ${r.week === ctx.S.week ? 'id="nowwk"' : ''}>
+      <div class="season" id="season">${ctx.S.roadmap.map((r) => `<div class="wk ${weekState(r.week)} ${r.week === 19 ? 'final' : ''}" ${r.week === ctx.S.week ? 'id="nowwk"' : ''}>
         <span class="ph">${esc(r.phase)}</span><b>Wk ${r.week}</b>${esc(r.match)}</div>`).join('')}</div>
     </section>
 
@@ -140,8 +149,21 @@ export async function home() {
 		nw = document.getElementById('nowwk');
 	if (sea && nw) sea.scrollLeft = nw.offsetLeft - sea.offsetLeft - sea.clientWidth / 2 + nw.clientWidth / 2;
 	app.querySelectorAll('.task').forEach((b) => b.addEventListener('click', () => {
-		if (b.getAttribute('aria-disabled')) return toast({ done: 'You already finished this one.', na: "Dad hasn't added the questions for this one yet.", skip: 'Rest day. No play today.', unpublished: "Dad hasn't published this week yet.", nomistakes: 'No mistakes to replay. Nice batting!' }[b.dataset.status] || `Not yet. ${b.dataset.why}.`, 'error');
-		sfx('click'); location.hash = b.dataset.slot ? `play/${b.dataset.kind}/${b.dataset.slot}/${b.dataset.week}` : `play/${b.dataset.kind}`;
+		if (b.getAttribute('aria-disabled')) {
+			const why = {
+				done: 'You already finished this one.',
+				na: "Dad hasn't added the questions for this one yet.",
+				skip: 'Rest day. No play today.',
+				unpublished: "Dad hasn't published this week yet.",
+				nomistakes: 'No mistakes to replay. Nice batting!',
+			}[b.dataset.status] || `Not yet. ${b.dataset.why}.`;
+			toast(why, 'error');
+			return;
+		}
+		sfx('click');
+		window.location.hash = b.dataset.slot
+			? `play/${b.dataset.kind}/${b.dataset.slot}/${b.dataset.week}`
+			: `play/${b.dataset.kind}`;
 	}));
 	app.querySelectorAll('[data-react]').forEach((b) => b.addEventListener('click', async () => {
 		await api(`/messages/${msg.id}/react`, { body: { reaction: b.dataset.react } }); sfx('badge'); toast('Sent to Dad!', 'ok'); home();
