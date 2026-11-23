@@ -98,4 +98,42 @@ assert.equal((await call("parent", "POST", `/api/parent/rewards/${ice.id}`, { st
 const after = (await call("parent", "GET", "/api/parent/rewards")).data.filter((r) => r.title === "Ice cream");
 assert.equal(after.length, 2);
 assert.equal((await call("parent", "GET", "/api/parent/events")).status, 200);
+
+// worksheets: upload (questions + pdf), download, paper/OMR submit, skips, daily stats
+const pdf = Buffer.from("%PDF-1.4 fake").toString("base64");
+const up = await call("parent", "POST", "/api/parent/worksheets", { title: "Day 1", set_date: "2026-11-24", week: 2, pdf_base64: pdf, questions: [
+  { q: "2+2?", a: "4", t: "Add", d: 1 }, { q: "Pick even", a: "1", o: ["3", "4", "5"], t: "Parity", d: 2 }, { q: "10-3?", a: "7", t: "Sub", d: 1 }] });
+assert.equal(up.status, 200); assert.equal(up.data.questions, 3);
+assert.equal((await call("parent", "POST", "/api/parent/worksheets", { title: "x", questions: [{ q: "no answer" }] })).status, 400);
+assert.equal((await call("kid", "POST", "/api/parent/worksheets", { title: "x" })).status, 403);
+const wl = (await call("kid", "GET", "/api/worksheets")).data;
+assert.equal(wl[0].questions, 3); assert.ok(wl[0].has_pdf);
+const wd = (await call("kid", "GET", `/api/worksheets/${up.data.id}`)).data;
+assert.ok(!("answer" in wd.questions[0]), "worksheet answers must not leak");
+const pdfRes = await handle(new Request(`http://localhost/api/worksheets/${up.data.id}/pdf`, { headers: { cookie: cookie.kid } }), env);
+assert.equal(pdfRes.headers.get("content-type"), "application/pdf");
+assert.equal(Buffer.from(await pdfRes.arrayBuffer()).toString().slice(0, 8), "%PDF-1.4");
+const [qa, qb, qc] = wd.questions;
+const sub = (await call("kid", "POST", `/api/worksheets/${up.data.id}/submit`, { minutes: 12, answers: { [qa.id]: "4", [qb.id]: "0", [qc.id]: "" } })).data;
+assert.equal(sub.score, 1); assert.equal(sub.skipped, 1); assert.equal(sub.total, 3);
+const before = (await call("kid", "GET", "/api/state")).data.totals;
+const re = (await call("kid", "POST", `/api/worksheets/${up.data.id}/submit`, { minutes: 5, answers: { [qa.id]: "4", [qb.id]: "1", [qc.id]: "7" } })).data;
+assert.equal(re.score, 3);
+const afterRe = (await call("kid", "GET", "/api/state")).data.totals;
+assert.equal(afterRe.runs - before.runs, re.runs - sub.runs, "repeat replaces the earlier score instead of adding");
+assert.equal(afterRe.sessions, before.sessions);
+const pd = (await call("parent", "GET", `/api/parent/sessions/${sub.session_id}`)).data;
+assert.equal(pd.session.source, "paper"); assert.equal(pd.attempts.filter((a) => a.skipped).length, 1);
+// on-screen play of a worksheet: unanswered questions become skipped rows at finish
+const ws2 = (await call("kid", "POST", "/api/session/start", { kind: "worksheet", worksheet_id: up.data.id })).data;
+assert.equal(ws2.questions.length, 3);
+await call("kid", "POST", `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[0].id, given: "4", time_ms: 5000 });
+await call("kid", "POST", `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[1].id, given: "", time_ms: 1000 });
+await call("kid", "POST", `/api/session/${ws2.session.id}/finish`, {});
+const d2 = (await call("parent", "GET", `/api/parent/sessions/${ws2.session.id}`)).data;
+assert.equal(d2.attempts.length, 3); assert.equal(d2.attempts.filter((a) => a.skipped).length, 2);
+const daily = (await call("parent", "GET", "/api/parent/daily?days=7")).data;
+assert.ok(daily.length && daily.at(-1).paper_sessions >= 1 && daily.at(-1).minutes >= 12 && daily.at(-1).skipped === 2);
+assert.equal((await call("parent", "DELETE", `/api/parent/worksheets/${up.data.id}`)).status, 200);
+assert.equal((await call("kid", "GET", "/api/worksheets")).data.length, 0);
 console.log("ALL API TESTS PASSED", cheap.title);
