@@ -11,9 +11,11 @@
     "dev": "wrangler pages dev public",
     "dev:node": "node test/dev-server.mjs",
     "test": "node test/api.test.mjs",
-    "deploy": "wrangler pages deploy public"
+    "deploy": "wrangler pages deploy public",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "wrangler": "^4.0.0"
   }
 }
