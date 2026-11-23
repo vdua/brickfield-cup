@@ -91,3 +91,17 @@ details.guide-done { margin-top: 12px; } details.guide-done > summary { font-wei
 .gbody h3 { margin: 18px 0 4px; font-size: 17px; } .gbody h4 { margin: 14px 0 2px; font-size: 15px; }
 .gbody ul, .gbody ol { padding-left: 22px; margin: 6px 0; } .gbody li { margin: 3px 0; }
 .gbody code { background: #edf0f5; padding: 1px 5px; border-radius: 5px; font-size: 90%; }
+
+/* Calendar tab */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .dow{font-weight:800;font-size:12px;text-align:center;color:#868e96;text-transform:uppercase}
+.cal .cell{min-height:104px;border:1px solid #dee2e6;border-radius:10px;padding:6px;background:#fff;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cal .cell.off{background:#f1f3f5}
+.cal .cell.today{border-color:#f59f00;box-shadow:0 0 0 2px #ffe8a3}
+.cal .cell .d{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:#495057}
+.cal .cell .d b{font-size:15px;color:#212529}
+.cal .cell .why{font-size:11px;color:#868e96}
+.cal a.pill:not(.good):not(.mid):not(.bad){color:#343a40}
+.cal .cell .pill{font-size:11px;padding:2px 6px;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal .wk{grid-column:1/-1;font-size:12px;color:#868e96;margin-top:6px}
+@media (max-width:720px){.cal{display:block}.cal .dow{display:none}.cal .cell{min-height:0;margin-bottom:6px;flex-direction:row;flex-wrap:wrap;align-items:center}.cal .cell .d{min-width:92px}}

@@ -102,14 +102,25 @@ const fin = (await call("kid", "POST", `/api/session/${start.session.id}/finish`
 console.log("diagnostic finished:", fin.session.score, "/", fin.session.total, "runs", fin.session.runs, "badges", fin.newBadges.map((b) => b.code));
 assert.equal(fin.session.score, 17);
 assert.ok(fin.newBadges.some((b) => b.code === "first_innings"));
-assert.equal(fin.bonus.runs, 1); // first working day pays 1 run, once a day
+assert.equal(fin.bonus.runs, 0); // nothing published, so today is not a working day: no bonus
 
-// replay is the one ungated extra
+// replay is the one ungated extra, but it only serves real unfixed mistakes
 {
+  const wrongIds = new Set((await env.DB.prepare("SELECT DISTINCT question_id id FROM attempts WHERE correct=0").all()).results.map((x) => x.id));
+  assert.ok((await call("kid", "GET", "/api/state")).data.replay.due > 0, "mistakes are waiting");
+  env.DB.exec(`UPDATE questions SET active=0 WHERE id IN (${[...wrongIds].join(",")})`); // no replayable mistakes left
+  assert.equal((await call("kid", "GET", "/api/state")).data.replay.due, 0);
+  assert.equal((await call("kid", "POST", "/api/session/start", { kind: "revision", week: 2 })).status, 404, "no mistakes, no replay");
+  env.DB.exec(`UPDATE questions SET active=1 WHERE id IN (${[...wrongIds].join(",")})`);
   const s = await call("kid", "POST", "/api/session/start", { kind: "revision", week: 2 });
   assert.equal(s.status, 200);
+  assert.ok(s.data.questions.length <= 5 && s.data.questions.every((q) => wrongIds.has(q.id)), "only questions he got wrong");
+  const before = (await call("kid", "GET", "/api/state")).data;
   const f = await answerAll(s.data);
-  assert.equal(f.bonus.runs, 0, "the regularity bonus is once a day");
+  assert.equal(f.bonus.runs, 0, "replay never pays the regularity bonus");
+  const after = (await call("kid", "GET", "/api/state")).data;
+  assert.deepEqual([after.streak, after.regularity.wicketsLeft], [before.streak, before.regularity.wicketsLeft], "replay does not touch the streak or its wickets");
+  assert.equal(after.playedToday, before.playedToday);
 }
 
 // publishing week 2: Nets 1 was yesterday (missed), Nets 2 is today, the rest are ahead; Match is in the past so the worksheet below can count

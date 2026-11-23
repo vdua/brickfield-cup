@@ -3,6 +3,7 @@ import { main } from "./parent/state.js";
 import { overview } from "./parent/overview.js";
 import { activity, sessions, errors } from "./parent/history.js";
 import { plan } from "./parent/plan.js";
+import { calendar } from "./parent/calendar.js";
 import { questions } from "./parent/questions.js";
 import { family, settings } from "./parent/family.js";
 
@@ -15,6 +16,7 @@ async function route() {
     else if (name === "sessions") await sessions(arg);
     else if (name === "errors") await errors();
     else if (name === "plan") await plan(arg);
+    else if (name === "calendar") await calendar(arg);
     else if (name === "questions") await questions();
     else if (name === "family") await family();
     else if (name === "settings") await settings();
