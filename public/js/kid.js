@@ -17,10 +17,10 @@ document.addEventListener("visibilitychange", () => {
 // ---------- routing ----------
 function route() {
   document.querySelectorAll(".overlay").forEach((o) => o.remove());
-  const [name, arg] = (location.hash.slice(1) || "home").split("/");
+  const [name, arg, slot, week] = (location.hash.slice(1) || "home").split("/");
   if (name === "play" && arg) {
     if (ctx.I && ctx.I.kind === arg) return; // already batting
-    play(arg);
+    play(arg, slot, Number(week) || 0);
   } else home();
 }
 addEventListener("hashchange", route);

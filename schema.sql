@@ -52,7 +52,8 @@ CREATE TABLE IF NOT EXISTS sessions (
   away_s       INTEGER NOT NULL DEFAULT 0,        -- seconds the tab was hidden during the session
   away_count   INTEGER NOT NULL DEFAULT 0,
   source       TEXT    NOT NULL DEFAULT 'app',    -- app | paper (answers entered from an OMR sheet)
-  worksheet_id INTEGER
+  worksheet_id INTEGER,
+  slot         TEXT                       -- weekly mission slot this session completes (see week_slots), NULL for extras
 );
 CREATE INDEX IF NOT EXISTS idx_s_week ON sessions(week, kind);
 CREATE INDEX IF NOT EXISTS idx_s_ended ON sessions(ended_at);
@@ -113,6 +114,15 @@ CREATE TABLE IF NOT EXISTS daily_bonus (
   day        TEXT PRIMARY KEY,
   runs       INTEGER NOT NULL,
   created_at TEXT NOT NULL
+);
+
+-- The parent publishes a week once; each mission slot then opens on its day (past slots stay playable, future ones never are).
+CREATE TABLE IF NOT EXISTS week_slots (
+  week         INTEGER NOT NULL,
+  slot         TEXT    NOT NULL,                  -- nets1 | nets2 | nets3 | puzzle | toss | match | over
+  day          TEXT    NOT NULL,                  -- IST day, YYYY-MM-DD
+  published_at TEXT    NOT NULL,
+  PRIMARY KEY (week, slot)
 );
 
 -- Parent teaching guides live as markdown in public/guides/; this only records which week's guide has been taught.

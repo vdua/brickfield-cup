@@ -4,14 +4,14 @@ import { app, ctx, KIND, PACE } from "./state.js";
 import { renderBar } from "./home.js";
 
 // ---------- innings ----------
-export async function play(kind) {
+export async function play(kind, slot = "", week = 0) {
   const my = ++ctx.nav;
   app.innerHTML = `<div class="pitch"><div class="loading">Walking out to bat…</div></div>`;
   let d;
-  try { d = await api("/session/start", { body: { kind } }); }
+  try { d = await api("/session/start", { body: { kind, slot, week } }); }
   catch (e) { toast(e.message, "error"); location.hash = "home"; return; }
   if (my !== ctx.nav) return;
-  ctx.I = { id: d.session.id, kind, qs: d.questions, i: 0, res: [], runs: 0, wk: 0, away: 0, awayCount: 0, hiddenAt: null, t0: Date.now(), checked: false, timer: null };
+  ctx.I = { id: d.session.id, kind: d.session.kind, qs: d.questions, i: 0, res: [], runs: 0, wk: 0, away: 0, awayCount: 0, hiddenAt: null, t0: Date.now(), checked: false, timer: null };
   if (!ctx.S) { try { ctx.S = await api("/state"); renderBar(); } catch (e) {} }
   ball();
 }
@@ -168,7 +168,7 @@ export async function finish(quit) {
     <div class="panel" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
       <div><b>${s.score === s.total && s.total ? "Not out and perfect!" : s.wickets ? "Every wicket is a lesson. Your mistakes go to Replay." : "Great knock!"}</b><br>
       <span class="sub">${f.bonus?.runs ? `+${f.bonus.runs} regularity run${f.bonus.runs === 1 ? "" : "s"} for showing up. ` : ""}Total runs now: ${f.totals.runs}</span></div>
-      <div style="display:flex;gap:12px;flex-wrap:wrap">${["practice", "puzzle", "revision"].includes(kind) ? `<button class="brick blue" type="button" id="again">Bat again</button>` : ""}
+      <div style="display:flex;gap:12px;flex-wrap:wrap">${kind === "revision" ? `<button class="brick blue" type="button" id="again">Bat again</button>` : ""}
       <button class="brick green" type="button" id="pav">Back to the pavilion</button></div>
     </div></div></div>`;
   hydrateAssets(app);

@@ -16,8 +16,9 @@ A correct answer earns runs by difficulty: easy 2, medium 4, hard 6 (`RUNS_FOR` 
 - Holidays: table `holidays`, managed in Parent > Settings (`GET/POST /api/parent/holidays`, `DELETE /api/parent/holidays/:day`).
 - On a rest day or holiday the kid cannot start a session or submit a paper worksheet (HTTP 403 with the reason). `/api/state` returns `regularity: { nextBonus, wicketsLeft, rest }`; the home screen shows a rest-day panel.
 
-## Next week's maximum (`lib/api/potential.js`)
-`GET /api/parent/overview` returns `nextWeek`: the most runs next week can earn if every answer is right, per part (before-check, Mon-Wed practice, Thursday puzzle, after-check, Sunday worksheet if uploaded) plus the regularity bonus for that week's working days. Practice and puzzle are drawn at random, so a part can show a range. The bonus range is low for a fresh streak, high for one already at 6. Replay is not counted. A week with no questions loaded shows a message instead of a total.
+## This week's maximum (`lib/api/potential.js`)
+`GET /api/parent/overview` returns `weekMax` for the current week: per part (Toss, Nets, Spin puzzle, Super over, and the Match worksheet if uploaded) the most runs it can give if every answer is right, shown as 0 to that maximum. Practice and puzzle questions are drawn at random, so the maximum assumes the hardest ones are drawn. Slots on a rest day or holiday are left out; missed missions stay in, because a catch-up session earns runs like any other (it only counts as a failed mission and cost him the streak day). `earned` is the runs from finished sessions this week.
+The regularity bonus is `{ banked, max }`: what the days already played paid, up to what he can still bank by playing every remaining working day, continuing the streak he is on now (1, 2, ... capped at 6). Replay is not counted. A week with no questions loaded shows a message instead of a total.
 
 ## Existing databases
 Run `migrations/2026-11-weekly-format.sql` against the live D1 **before** deploying this code (it is additive and safe to repeat; the new code reads `holidays`). It creates `holidays` and `daily_bonus`, adds the `rest_days` setting, and applies the week 1 question changes without duplicating anything:

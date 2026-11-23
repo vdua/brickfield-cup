@@ -1,4 +1,4 @@
-# Sunday worksheets, paper practice and daily stats
+# Saturday worksheets (the Match), paper practice and daily stats
 
 ## Upload (parent login required)
 `POST /api/parent/worksheets`
@@ -12,9 +12,10 @@
 Question order = number on the sheet (Q1, Q2, ...). For multiple choice `a` is the 0-based option index (A=0, B=1, ...). Replace the PDF with `POST /api/parent/worksheets/:id/pdf`; remove with `DELETE /api/parent/worksheets/:id`.
 
 ## Kid side
+A worksheet with `week` > 0 is the week's **Match** slot: it can only be handed in or started on screen once that slot is open or missed (never ahead of its day), see [sessions-and-missions.md](sessions-and-missions.md). On-screen play is `POST /api/session/start` with `{ slot: "match", week }`; the server picks the week's newest worksheet. Repeat paper submissions stay allowed but do not count as the mission again. Week-0 worksheets are ungated.
+
 - `GET /api/worksheets` list, `GET /api/worksheets/:id` questions (no answers), `GET /api/worksheets/:id/pdf` download.
 - **OMR submit:** `POST /api/worksheets/:id/submit` with `{ answers: { "<question_id>": "1", "<question_id>": "" }, minutes: 12 }`. Blank = skipped. Creates a `paper` session, marks it, awards runs and badges, and returns the review. Repeats are allowed: only the most recent finished attempt of a worksheet counts towards runs, totals and the daily score; time spent counts for every attempt, on screen or paper.
-- Can also be played on screen: `POST /api/session/start` with `{ kind: "worksheet", worksheet_id }`.
 
 ## What is recorded
 - `attempts.skipped = 1` for blank answers and for questions never reached when an innings finishes.

@@ -8,10 +8,11 @@ export const KIND = {
   practice: { name: "Nets practice", c: "var(--blue)" },
   puzzle: { name: "Spin puzzles", c: "var(--orange)" },
   revision: { name: "Replay · fix old mistakes", c: "var(--grass)" },
-  after: { name: "Final over · After-check", c: "#ae3ec9" },
+  after: { name: "Super over · After-check", c: "#ae3ec9" },
+  worksheet: { name: "Match · Worksheet", c: "#2b8a3e" },
   mock: { name: "Mock Test Match", c: "#14213d" },
 };
-export const TASK_COLORS = { diagnostic: "var(--red)", before: "var(--red)", practice: "var(--blue)", puzzle: "var(--orange)", revision: "var(--grass)", after: "#7a5aa6" };
+export const TASK_COLORS = { diagnostic: "var(--red)", before: "var(--red)", practice: "var(--blue)", puzzle: "var(--orange)", revision: "var(--grass)", after: "#7a5aa6", worksheet: "#2b8a3e" };
 export const PACE = { 1: ["Spin", "2 runs"], 2: ["Medium pace", "4 runs"], 3: ["Fast bowler", "6 runs"] };
 export const TIPS = [
   "Underline what the question asks for before you start. “How many MORE” is a different question from “how many”!",
