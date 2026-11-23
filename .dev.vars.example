@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local `npm run dev` (never commit .dev.vars)
+SESSION_SECRET=change-me-to-a-long-random-string
+KID_PIN=1234
+PARENT_PIN=9999

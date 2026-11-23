@@ -1,0 +1,5 @@
+node_modules/
+.dev.vars
+.wrangler/
+test/local.sqlite
+.DS_Store

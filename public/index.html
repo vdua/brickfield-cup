@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Brickfield Cup</title>
+<link rel="icon" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/kid.css">
+</head>
+<body>
+<div class="login">
+  <div class="scene"><div id="scene" data-asset="/assets/login-hero.webp" aria-label="A cricket stadium built from toy bricks"></div></div>
+  <div class="panel">
+    <div class="card">
+      <h1>The Brickfield Cup</h1>
+      <p class="lead">Face every ball. Score runs. Build your stadium.</p>
+      <div class="who" role="group" aria-label="Who is playing?">
+        <button class="brick blue" id="asKid" type="button" style="flex:1">I'm the player</button>
+        <button class="brick ghost" id="asParent" type="button" style="flex:1">Parent</button>
+      </div>
+      <p id="whoLabel" style="margin:0;font-weight:700">Player PIN</p>
+      <div class="pinbox" id="dots" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div class="pad" id="pad"></div>
+      <p class="err" id="err" role="alert"></p>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { api, hydrateAssets } from "/js/common.js";
+import { stadiumSVG } from "/js/art.js";
+{
+  document.getElementById("scene").innerHTML = stadiumSVG(6, 2026, true);
+  hydrateAssets();
+  api("/me", { noRedirect: true }).then((r) => { location.href = r.role === "parent" ? "/parent" : "/kid"; }).catch(() => {});
+  let role = "kid", pin = "";
+  const dots = document.getElementById("dots"), err = document.getElementById("err");
+  const keys = ["1","2","3","4","5","6","7","8","9","⌫","0","Go"];
+  const colors = ["ghost"];
+  document.getElementById("pad").innerHTML = keys.map((k, i) => `<button class="brick ${k === "Go" ? "green" : k === "⌫" ? "ghost" : colors[0]}" type="button" data-k="${k}" aria-label="${k === "⌫" ? "Delete" : k}">${k}</button>`).join("");
+  const draw = () => { dots.innerHTML = Array.from({ length: Math.max(4, pin.length) }, (_, i) => `<span class="${i < pin.length ? "on" : ""}"></span>`).join(""); };
+  const setRole = (r) => { role = r; pin = ""; draw(); err.textContent = ""; document.getElementById("whoLabel").textContent = r === "kid" ? "Player PIN" : "Parent PIN"; };
+  async function go() {
+    if (!pin) return;
+    try { const r = await api("/login", { body: { role, pin }, noRedirect: true }); location.href = r.role === "parent" ? "/parent" : "/kid"; }
+    catch (e) { err.textContent = e.message; pin = ""; draw(); }
+  }
+  document.getElementById("pad").addEventListener("click", (e) => {
+    const k = e.target.closest("button")?.dataset.k; if (!k) return;
+    if (k === "⌫") pin = pin.slice(0, -1); else if (k === "Go") return go(); else if (pin.length < 8) pin += k;
+    err.textContent = ""; draw();
+  });
+  addEventListener("keydown", (e) => { if (/^\d$/.test(e.key) && pin.length < 8) { pin += e.key; draw(); } else if (e.key === "Backspace") { pin = pin.slice(0, -1); draw(); } else if (e.key === "Enter") go(); });
+  document.getElementById("asKid").onclick = () => setRole("kid");
+  document.getElementById("asParent").onclick = () => setRole("parent");
+  draw();
+}
+</script>
+</body>
+</html>
