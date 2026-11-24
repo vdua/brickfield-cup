@@ -105,3 +105,6 @@ details.guide-done { margin-top: 12px; } details.guide-done > summary { font-wei
 .cal .cell .pill{font-size:11px;padding:2px 6px;text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cal .wk{grid-column:1/-1;font-size:12px;color:#868e96;margin-top:6px}
 @media (max-width:720px){.cal{display:block}.cal .dow{display:none}.cal .cell{min-height:0;margin-bottom:6px;flex-direction:row;flex-wrap:wrap;align-items:center}.cal .cell .d{min-width:92px}}
+.howf { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.howf select, .howf input { border: 1px solid #ced4da; border-radius: 8px; padding: 6px 8px; min-height: 36px; background: #fff; }
+.howf input { width: 82px; }
