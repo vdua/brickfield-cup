@@ -2,6 +2,8 @@ import { logEvent } from '/js/common.js';
 import { ctx } from './kid/state.js';
 import { home } from './kid/home.js';
 import { play } from './kid/play.js';
+import { sheets } from './kid/sheets.js';
+import { playSheet } from './kid/sheet-play.js';
 
 // ---------- focus tracking (shown to the parent as "looked away") ----------
 document.addEventListener('visibilitychange', () => {
@@ -20,7 +22,9 @@ document.addEventListener('visibilitychange', () => {
 function route() {
 	document.querySelectorAll('.overlay').forEach((o) => o.remove());
 	const [name, arg, slot, week] = (window.location.hash.slice(1) || 'home').split('/');
-	if (name === 'play' && arg) {
+	if (name === 'sheets') sheets();
+	else if (name === 'play' && arg === 'worksheet') playSheet(Number(week) || 0);
+	else if (name === 'play' && arg) {
 		if (ctx.I && ctx.I.kind === arg) return; // already batting
 		play(arg, slot, Number(week) || 0);
 	} else home();

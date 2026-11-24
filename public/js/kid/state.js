@@ -1,7 +1,7 @@
 // Shared kid-app state. Mutate via ctx.* so every module sees the same values.
 export const app = document.getElementById('app');
 export const bar = document.getElementById('bar');
-export const ctx = { S: null, I: null, nav: 0 }; // S: /api/state, I: current innings, nav: guards slow loads
+export const ctx = { S: null, I: null, W: null, nav: 0 }; // S: /api/state, I: current innings, W: worksheet being written, nav: guards slow loads
 export const KIND = {
 	diagnostic: { name: 'Big Toss · Diagnostic', c: 'var(--red)' },
 	before: { name: 'Toss · Before-check', c: 'var(--red)' },
