@@ -258,11 +258,9 @@ const [qa, qb, qc] = wd.questions;
 const sub = (await call('kid', 'POST', `/api/worksheets/${up.data.id}/submit`, { minutes: 12, answers: { [qa.id]: '4', [qb.id]: '0', [qc.id]: '' } })).data;
 assert.equal(sub.score, 1); assert.equal(sub.skipped, 1); assert.equal(sub.total, 3);
 const before = (await call('kid', 'GET', '/api/state')).data.totals;
-const re = (await call('kid', 'POST', `/api/worksheets/${up.data.id}/submit`, { minutes: 5, answers: { [qa.id]: '4', [qb.id]: '1', [qc.id]: '7' } })).data;
-assert.equal(re.score, 3);
-const afterRe = (await call('kid', 'GET', '/api/state')).data.totals;
-assert.equal(afterRe.runs - before.runs, re.runs - sub.runs, 'repeat replaces the earlier score instead of adding');
-assert.equal(afterRe.sessions, before.sessions);
+const re = await call('kid', 'POST', `/api/worksheets/${up.data.id}/submit`, { minutes: 5, answers: { [qa.id]: '4', [qb.id]: '1', [qc.id]: '7' } });
+assert.equal(re.status, 409, 'a worksheet is handed in once');
+assert.deepEqual((await call('kid', 'GET', '/api/state')).data.totals, before, 'a refused repeat changes nothing');
 const pd = (await call('parent', 'GET', `/api/parent/sessions/${sub.session_id}`)).data;
 assert.equal(pd.session.source, 'paper'); assert.equal(pd.attempts.filter((a) => a.skipped).length, 1);
 // the Match is a slot: a week-5 sheet whose Match is still ahead can't be handed in, and a week-3 sheet is played on screen today
@@ -273,18 +271,19 @@ assert.equal((await call('kid', 'POST', `/api/worksheets/${w5.id}/submit`, { min
 assert.equal((await call('kid', 'POST', '/api/session/start', { week: 5, slot: 'match' })).status, 403);
 const w3 = (await call('parent', 'POST', '/api/parent/worksheets', sheet(3))).data;
 await call('parent', 'POST', '/api/parent/plan/3/publish', { days: { match: t0 } });
-// on-screen play of a worksheet: unanswered questions become skipped rows at finish
+// on-screen play of a worksheet: nothing is graded per answer; unanswered questions become skipped rows when it is handed in
 const ws2 = (await call('kid', 'POST', '/api/session/start', { week: 3, slot: 'match' })).data;
-assert.equal(ws2.questions.length, 3); assert.equal(ws2.session.slot, 'match');
-await call('kid', 'POST', `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[0].id, given: '4', time_ms: 5000 });
-await call('kid', 'POST', `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[1].id, given: '', time_ms: 1000 });
-await call('kid', 'POST', `/api/session/${ws2.session.id}/finish`, {});
+assert.equal(ws2.questions.length, 3); assert.equal(ws2.session.slot, 'match'); assert.equal(ws2.session.worksheet_id, w3.id);
+assert.equal((await call('kid', 'POST', `/api/session/${ws2.session.id}/answer`, { question_id: ws2.questions[0].id, given: '4', time_ms: 5000 })).status, 400);
+assert.equal((await call('kid', 'POST', `/api/session/${ws2.session.id}/finish`, {})).status, 400);
+const ws2s = await call('kid', 'POST', `/api/worksheets/${w3.id}/submit`, { session_id: ws2.session.id, answers: { [ws2.questions[0].id]: '4', [ws2.questions[1].id]: '' } });
+assert.equal(ws2s.status, 200); assert.equal(ws2s.data.score, 1); assert.equal(ws2s.data.session_id, ws2.session.id);
 const d2 = (await call('parent', 'GET', `/api/parent/sessions/${ws2.session.id}`)).data;
-assert.equal(d2.attempts.length, 3); assert.equal(d2.attempts.filter((a) => a.skipped).length, 2);
+assert.equal(d2.attempts.length, 3); assert.equal(d2.attempts.filter((a) => a.skipped).length, 2); assert.equal(d2.session.source, 'app');
 assert.equal((await slotsOf(3)).match.status, 'done');
 assert.equal((await slotsOf(2)).match.status, 'done'); assert.equal((await slotsOf(2)).match.late, true);
 const daily = (await call('parent', 'GET', '/api/parent/daily?days=7')).data;
-assert.ok(daily.length && daily.at(-1).paper_sessions >= 1 && daily.at(-1).minutes >= 12 && daily.at(-1).skipped === 2);
+assert.ok(daily.length && daily.at(-1).paper_sessions >= 1 && daily.at(-1).minutes >= 12 && daily.at(-1).skipped === 3);
 assert.equal((await call('parent', 'DELETE', `/api/parent/worksheets/${up.data.id}`)).status, 200);
 await call('parent', 'DELETE', `/api/parent/worksheets/${w5.id}`); await call('parent', 'DELETE', `/api/parent/worksheets/${w3.id}`);
 assert.equal((await call('kid', 'GET', '/api/worksheets')).data.length, 0);

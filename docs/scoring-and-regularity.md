@@ -1,7 +1,7 @@
 # Scoring, regularity bonus and rest days
 
 ## Runs per answer
-A correct answer earns runs by difficulty: easy 2, medium 4, hard 6 (`RUNS_FOR` in `lib/content.js`). A wrong or skipped answer earns 0 and is a **wicket**. A session's runs are the sum of its answers. Total runs grow the stadium; total minus pending/approved reward costs is the wallet. Badges give recognition, not runs. Only a worksheet's latest finished attempt counts.
+A correct answer earns runs by difficulty: easy 2, medium 4, hard 6 (`RUNS_FOR` in `lib/content.js`). A wrong or skipped answer earns 0 and is a **wicket**. A session's runs are the sum of its answers. Total runs grow the stadium; total minus pending/approved reward costs is the wallet. Badges give recognition, not runs. A worksheet is handed in once and its runs are paid at hand-in, never per answer.
 
 ## Regularity bonus (`lib/api/streak.js`)
 - A **working day** is a day that is not a rest day, not a holiday, and has a playable mission scheduled on it (a published slot whose questions or worksheet exist). Days with nothing published, or only slots with no questions yet, are not working days.
