@@ -223,3 +223,12 @@ main.home { max-width: 1180px; margin: 0 auto; padding: 18px max(3vw, 14px) 60px
 .rev { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #f3f6fb; color: var(--ink); border-left: 5px solid var(--line); }
 .rev small { display: block; color: var(--muted); } .rev.ok { border-left-color: var(--grass2); } .rev.bad { border-left-color: var(--red); } .rev.skip { border-left-color: var(--orange); }
 .rev .how { margin-top: 6px; font-size: 14px; }
+.sheetclock { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 22px; color: #fff; }
+.sheetclock.low { color: var(--orange); } .sheetclock.over { color: var(--red); }
+.omrgrid { display: grid; gap: 8px; }
+.omrrow { display: flex; gap: 12px; align-items: center; padding: 6px 10px; border-radius: 10px; background: #f3f6fb; }
+.omrrow.done { background: #e6f4ea; } .omrrow .no { width: 28px; font-weight: 800; text-align: right; }
+.omrrow .cells { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.obubble { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--ink); background: #fff; font-weight: 800; font-size: 16px; cursor: pointer; }
+.obubble.on { background: var(--ink); color: #fff; }
+.written { font: inherit; font-size: 18px; font-weight: 700; width: 180px; padding: 8px 12px; border-radius: 10px; border: 2px solid var(--ink); }

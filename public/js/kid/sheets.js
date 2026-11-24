@@ -9,6 +9,22 @@ export async function ensureBar() {
 	try { ctx.S = await api('/state'); renderBar(); } catch (e) { /* the bar stays empty until home loads */ }
 }
 
+// Before the clock starts: the limit, the PDF for paper, and a Start button. Returns true when the worksheet should start now.
+export async function intro(week) {
+	let list = [];
+	try { list = await api('/worksheets'); } catch (e) { /* the start call reports the problem */ }
+	const w = list.find((x) => x.week === week && !x.done_session);
+	if (!w || w.in_progress || (w.mode !== 'paper' && !w.time_limit_min)) return true; // resume, or nothing to explain
+	return new Promise((resolve) => {
+		app.innerHTML = `<div class="pitch"><div class="qcard"><h2 style="margin-top:0">${esc(w.title)}</h2>
+      <p class="qtext">${w.time_limit_min ? `You have <b>${w.time_limit_min} minutes</b>. The clock starts when you press Start and keeps running even if you close this page. Hand in after the time and you get no runs and no streak day.` : 'Take your time.'}</p>
+      ${w.mode === 'paper' ? `<p>This one is on paper. ${w.has_pdf ? `<a href="/api/worksheets/${w.id}/pdf" target="_blank" rel="noopener">Open the PDF</a> and print it first, then press Start.` : 'Get the printed sheet, then press Start.'} Answer on the sheet, then fill in this page's answer grid.</p>` : '<p>You answer on screen. You can skip and come back until you hand in.</p>'}
+      <div class="answer-row"><button class="brick ghost" type="button" id="no">Not yet</button><button class="brick green" type="button" id="go">Start</button></div></div></div>`;
+		app.querySelector('#no').onclick = () => { window.location.hash = 'sheets'; resolve(false); };
+		app.querySelector('#go').onclick = () => resolve(true);
+	});
+}
+
 const dayText = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', {
 	weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC',
 });

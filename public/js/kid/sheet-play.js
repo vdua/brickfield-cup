@@ -2,38 +2,22 @@
 // nothing is marked while playing. Answers are kept as a draft on the server so another device can carry on.
 import { api, esc, toast } from '/js/common.js';
 import { app, ctx } from './state.js';
-import { sheetReview } from './sheet-review.js';
-import { ensureBar } from './sheets.js';
+import { ensureBar, intro } from './sheets.js';
+import { omr } from './sheet-omr.js';
+import {
+	filled, saveDraft, later, counts, clockText, startClock, confirmHandIn,
+} from './sheet-core.js';
 
-const SAVE_MS = 800;
-const filled = (W, q) => String(W.answers[q.id] ?? '').trim() !== '';
 const stateOf = (W, q, i) => {
 	if (filled(W, q)) return 'answered';
 	return W.seen.has(i) && i !== W.i ? 'skipped' : '';
-};
-
-async function saveDraft() {
-	const { W } = ctx;
-	if (!W) return;
-	clearTimeout(W.timer); W.timer = null;
-	try { await api(`/session/${W.sid}/draft`, { method: 'PUT', body: { answers: W.answers } }); W.dirty = false; } catch (e) { toast(`Not saved yet: ${e.message}`, 'error'); }
-}
-const later = () => {
-	ctx.W.dirty = true;
-	clearTimeout(ctx.W.timer);
-	ctx.W.timer = setTimeout(saveDraft, SAVE_MS);
-};
-
-const counts = (W) => {
-	const answered = W.qs.filter((q) => filled(W, q)).length;
-	const skipped = W.qs.filter((q, i) => stateOf(W, q, i) === 'skipped').length;
-	return { answered, skipped, open: W.qs.length - answered - skipped };
 };
 
 function stripHtml(W) {
 	const c = counts(W);
 	return `<div class="innbar"><div><small>Match · Worksheet</small><span class="led big">${c.answered}/${W.qs.length}</span></div>
     <div class="balls sheetnav" aria-label="Questions">${W.qs.map((q, i) => `<button type="button" data-go="${i}" class="${stateOf(W, q, i)} ${i === W.i ? 'now' : ''}" title="Question ${i + 1}">${i + 1}</button>`).join('')}</div>
+    <span class="sheetclock" id="clock">${clockText(W)}</span>
     <div class="legend"><small>${c.answered} answered · ${c.skipped} skipped · ${c.open} not seen</small></div>
     <button class="quit" type="button" id="leave">Save and leave</button></div>`;
 }
@@ -73,36 +57,13 @@ function show(i) {
 	app.querySelector('#leave').onclick = async () => { await saveDraft(); ctx.W = null; toast('Saved. Start the Match again to carry on.', 'ok'); window.location.hash = 'home'; };
 }
 
-function confirmHandIn() {
-	const { W } = ctx;
-	const c = counts(W);
-	const blank = W.qs.length - c.answered;
-	const o = document.createElement('div');
-	o.className = 'overlay';
-	o.innerHTML = `<div class="result"><h2>Hand in the worksheet?</h2>
-    <p>${c.answered} of ${W.qs.length} answered${blank ? `, ${blank} left blank (they count as skipped)` : ''}.</p>
-    <p><b>You can't change anything after this.</b> A worksheet is handed in only once.</p>
-    <div class="why"><button class="brick ghost" type="button" id="back">Keep checking</button><button class="brick green" type="button" id="yes">Hand in</button></div></div>`;
-	document.body.appendChild(o);
-	o.querySelector('#back').onclick = () => o.remove();
-	o.querySelector('#yes').onclick = async () => {
-		o.querySelectorAll('button').forEach((b) => { b.disabled = true; });
-		try {
-			clearTimeout(W.timer);
-			const r = await api(`/worksheets/${W.wsId}/submit`, { body: { session_id: W.sid, answers: W.answers } });
-			o.remove();
-			ctx.W = null;
-			sheetReview(r, W.qs);
-		} catch (e) { toast(e.message, 'error'); o.remove(); }
-	};
-}
-
 export async function playSheet(week) {
 	ctx.nav += 1;
 	const my = ctx.nav;
 	ctx.I = null;
 	app.innerHTML = '<div class="pitch"><div class="loading">Opening the worksheet…</div></div>';
 	let d;
+	if (!(await intro(week))) return;
 	try { d = await api('/session/start', { body: { kind: 'worksheet', slot: 'match', week } }); } catch (e) { toast(e.message, 'error'); window.location.hash = 'home'; return; }
 	if (my !== ctx.nav) return;
 	await ensureBar();
@@ -115,8 +76,11 @@ export async function playSheet(week) {
 		i: 0,
 		timer: null,
 		dirty: false,
+		mode: d.session.mode,
+		pdf: `/api/worksheets/${d.session.worksheet_id}/pdf`,
 	};
-	const first = ctx.W.qs.findIndex((q) => !filled(ctx.W, q));
-	show(first < 0 ? 0 : first);
+	startClock(ctx.W, d.session);
+	if (ctx.W.mode === 'paper') omr();
+	else show(Math.max(0, ctx.W.qs.findIndex((q) => !filled(ctx.W, q))));
 	if (Object.keys(d.draft).length) toast('Welcome back. Your saved answers are here.', 'ok');
 }

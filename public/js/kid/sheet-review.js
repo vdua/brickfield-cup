@@ -23,7 +23,7 @@ export function sheetReview(f, qs) {
 	const wrong = f.total - f.score - f.skipped;
 	app.innerHTML = `<div class="pitch"><div class="summary">
     <div class="board">
-      <div style="color:#adb5bd;font-weight:700">Worksheet handed in</div>
+      <div style="color:#adb5bd;font-weight:700">Worksheet handed in${f.late ? ' late' : ''}</div>
       <div class="led score">${f.runs}</div><small style="color:#adb5bd">runs</small>
       <div class="row">
         <div><b>${f.score}</b><small>correct</small></div>
@@ -31,6 +31,7 @@ export function sheetReview(f, qs) {
         <div><b>${f.skipped}</b><small>skipped</small></div>
       </div>
     </div>
+    ${f.late ? `<div class="panel"><h2>Handed in after time</h2><p class="sub" style="margin:0">No runs and no streak day for this one, as the time limit (${f.time_limit_min} min) had passed. Your answers are marked below so you can learn from them.</p></div>` : ''}
     ${f.newBadges.length ? `<div class="panel"><h2>New in your trophy cabinet!</h2><div class="shelf">${f.newBadges.map((b) => `<div class="badge fresh">
       <div class="ic" data-asset="/assets/badges/${b.code}.webp">${badgeSVG(b, true)}</div><b>${esc(b.name)}</b><br><small>${esc(b.desc)}</small></div>`).join('')}</div></div>` : ''}
     ${stageUp ? `<div class="panel unlock"><div class="shout">New build: ${esc(f.stages[f.stageAfter].name)}!</div>
