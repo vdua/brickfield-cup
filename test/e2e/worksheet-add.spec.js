@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const questions = Array.from({ length: 5 }, (_, i) => ({ q: `Q${i + 1}?`, o: ['a', 'b', 'c', 'd'], a: 1, t: 'Mock', d: 1 }));
 const file = (name, obj) => ({ name, mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(obj)) });
-const paper = { worksheet: { title: 'E2E Mock', mode: 'screen', time_limit_min: 90, week: 0, runs_table: { 1: 1, 3: 3 } }, questions };
+const paper = { worksheet: { title: 'E2E Mock', mode: 'screen', time_limit_min: 90, week: 2, runs_table: { 1: 1, 3: 3 } }, questions };
 
 test.beforeEach(async ({ page, baseURL }) => {
 	await page.route((url) => url.origin !== new URL(baseURL).origin, (route) => route.abort());

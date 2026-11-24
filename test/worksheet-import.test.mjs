@@ -60,7 +60,7 @@ assert.equal(sql('SELECT COUNT(*) n FROM worksheets WHERE title=\'Bad\'')[0].n, 
 
 // #30: week / set_date editing until a session exists
 const put = (b) => call('parent', 'PUT', `/api/parent/worksheets/${ws.id}`, b);
-assert.equal((await put({ week: -1 })).status, 400); assert.equal((await put({ week: 1.5 })).status, 400); assert.equal((await put({ set_date: 'tomorrow' })).status, 400);
+assert.equal((await put({ week: -1 })).status, 400); assert.equal((await put({ week: 0 })).status, 400); assert.equal((await put({ week: 20 })).status, 400); assert.equal((await put({ week: 1.5 })).status, 400); assert.equal((await put({ set_date: 'tomorrow' })).status, 400);
 assert.equal((await put({ week: 4, set_date: '2026-12-01' })).status, 200);
 assert.deepEqual({ ...sql('SELECT week, set_date FROM worksheets WHERE id=?', ws.id)[0] }, { week: 4, set_date: '2026-12-01' });
 assert.ok(sql('SELECT week FROM questions WHERE worksheet_id=?', ws.id).every((r) => r.week === 4), 'questions follow the worksheet week');
@@ -81,7 +81,8 @@ assert.equal(sql('SELECT SUM(runs) n FROM attempts WHERE session_id=?', st.sessi
 assert.equal((await put({ runs_table: null })).status, 409, 'locked once handed in');
 
 // no table: global RUNS_FOR (d1 pays 2, d3 pays 6); partial table falls back per key
-const g = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'Global', set_date: today, week: 0, questions: mk(2, (i) => (i ? 3 : 2)), runs_table: { 3: 10 } })).data;
+const g = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'Global', set_date: today, week: 6, questions: mk(2, (i) => (i ? 3 : 2)), runs_table: { 3: 10 } })).data;
+await call('parent', 'POST', '/api/parent/plan/6/publish', { days: { match: today } });
 const gp = (await call('kid', 'POST', `/api/worksheets/${g.id}/submit`, { minutes: 1, answers: Object.fromEntries(sql('SELECT id FROM questions WHERE worksheet_id=?', g.id).map((r) => [r.id, '1'])) })).data;
 assert.equal(sql('SELECT SUM(runs) n FROM attempts WHERE session_id=?', gp.session_id)[0].n, 4 + 10, 'missing key 2 falls back to the global 4');
 console.log('ALL WORKSHEET IMPORT TESTS PASSED');

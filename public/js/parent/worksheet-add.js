@@ -20,7 +20,7 @@ export const formHtml = () => `<details class="card" id="addws"><summary><b>Add 
     <label>Title<input name="title" maxlength="120"></label>
     <label>Mode<select name="mode"><option value="screen">On screen</option><option value="paper">Paper</option></select></label>
     <label>Minutes (blank = no clock)<input name="limit" type="number" min="1" max="240"></label>
-    <label>Week (0 = free practice)<input name="week" type="number" min="0" max="19" value="0"></label>
+    <label>Week<input name="week" type="number" min="1" max="19" required></label>
     <label>Set for<input name="set_date" type="date"></label>
     <fieldset><legend>Runs for a correct answer (blank = default 2 / 4 / 6)</legend>
       <label>Easy d1<input name="r1" type="number" min="1"></label><label>Medium d2<input name="r2" type="number" min="1"></label><label>Hard d3<input name="r3" type="number" min="1"></label></fieldset>
@@ -54,7 +54,7 @@ export function setupForm(root, onDone) {
 			f.title.value = w.title || '';
 			f.mode.value = w.mode === 'paper' ? 'paper' : 'screen';
 			f.limit.value = w.time_limit_min ?? '';
-			f.week.value = w.week ?? 0;
+			f.week.value = w.week ?? '';
 			f.set_date.value = w.set_date || istDate(new Date().toISOString()).toISOString().slice(0, 10);
 			[1, 2, 3].forEach((d) => { f[`r${d}`].value = w.runs_table?.[d] ?? ''; });
 			refresh();
@@ -67,6 +67,7 @@ export function setupForm(root, onDone) {
 		const errs = refresh();
 		const pdf = f.pdf.files[0];
 		if (!f.title.value.trim()) { toast('Give the worksheet a title', 'error'); return; }
+		if (!(Number(f.week.value) >= 1 && Number(f.week.value) <= 19)) { toast('Pick the week, 1 to 19', 'error'); return; }
 		if (errs.length || !questions.length) { toast(questions.length ? 'Fix the problems listed first' : 'Pick the JSON file first', 'error'); return; }
 		if (f.mode.value === 'paper' && !pdf) { toast('Paper mode needs the PDF', 'error'); return; }
 		if (pdf && pdf.size > MAX_PDF_BYTES) { toast('That PDF is over 1.3 MB. Compress it or drop images.', 'error'); return; }
@@ -79,7 +80,7 @@ export function setupForm(root, onDone) {
 					title: f.title.value.trim(),
 					mode: f.mode.value,
 					time_limit_min: f.limit.value === '' ? null : Number(f.limit.value),
-					week: Number(f.week.value) || 0,
+					week: Number(f.week.value),
 					set_date: f.set_date.value,
 					runs_table: table(),
 					pdf_base64: pdf ? await toBase64(pdf) : undefined,
