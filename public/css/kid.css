@@ -207,3 +207,19 @@ main.home { max-width: 1180px; margin: 0 auto; padding: 18px max(3vw, 14px) 60px
   .coach { grid-template-columns: 100px minmax(0,1fr); } .coach .bot { width: 100px; height: 115px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* worksheets */
+.sheetlist { display: grid; gap: 10px; }
+.sheet { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 12px 14px; border-radius: 12px; background: #f3f6fb; color: var(--ink); }
+.sheet small { display: block; color: var(--muted); } .sheet.done { opacity: .85; }
+.sheet .acts { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; } .sheet .brick { min-height: 44px; padding: 8px 14px; text-decoration: none; }
+.sheetnav button { width: 34px; height: 34px; border-radius: 50%; border: 2px solid #3d405b; background: #2b2d42; color: #8d99ae; font-weight: 800; font-size: 13px; cursor: pointer; }
+.sheetnav button.answered { background: var(--grass2); color: #fff; border-color: var(--grass2); }
+.sheetnav button.skipped { background: transparent; color: var(--orange); border-color: var(--orange); }
+.sheetnav button.now { outline: 3px solid var(--yellow); outline-offset: 1px; }
+.innbar .legend small { color: #adb5bd; }
+.sheetfoot { max-width: 860px; margin: 16px auto 0; text-align: center; }
+.revlist { display: grid; gap: 10px; }
+.rev { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #f3f6fb; color: var(--ink); border-left: 5px solid var(--line); }
+.rev small { display: block; color: var(--muted); } .rev.ok { border-left-color: var(--grass2); } .rev.bad { border-left-color: var(--red); } .rev.skip { border-left-color: var(--orange); }
+.rev .how { margin-top: 6px; font-size: 14px; }

@@ -109,6 +109,7 @@ export async function home() {
       <h2>Week ${ctx.S.week}: ${esc(w.match)}</h2>
       <p class="sub">${esc(w.topic)} · ${esc(w.phase)} phase. ${missions.length ? 'Your missions for the next 7 days. Each opens on its day: play it then to keep your partnership and win the Full Match badge.' : 'Waiting for Dad to publish this week. Then each mission opens on its day.'}</p>
       <div class="mission">${(missions.length ? missions : plan.slots).map(taskHtml).join('')}${replayHtml()}</div>
+      <p class="sub" style="margin:14px 0 0"><a href="#sheets">All worksheets and printable PDFs</a></p>
     </section>
 
     <section class="panel span2">
