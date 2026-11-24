@@ -28,6 +28,8 @@ CREATE TABLE IF NOT EXISTS worksheets (
   set_date   TEXT    NOT NULL,                    -- IST day the worksheet is for, YYYY-MM-DD
   week       INTEGER NOT NULL DEFAULT 0,
   active     INTEGER NOT NULL DEFAULT 1,
+  mode       TEXT    NOT NULL DEFAULT 'screen',   -- screen: played on screen | paper: printed, answers entered in the OMR grid
+  time_limit_min INTEGER,                         -- NULL: no clock; otherwise hand in within this many minutes of starting
   created_at TEXT    NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_w_date ON worksheets(set_date, active);
@@ -60,6 +62,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   away_count   INTEGER NOT NULL DEFAULT 0,
   source       TEXT    NOT NULL DEFAULT 'app',    -- app | paper (answers entered from an OMR sheet)
   worksheet_id INTEGER,
+  late         INTEGER NOT NULL DEFAULT 0, -- worksheet handed in after its time limit: no runs, no badges, not a streak day
   slot         TEXT                       -- weekly mission slot this session completes (see week_slots), NULL for extras
 );
 CREATE INDEX IF NOT EXISTS idx_s_week ON sessions(week, kind);
