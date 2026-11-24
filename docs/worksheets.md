@@ -12,10 +12,13 @@
 Question order = number on the sheet (Q1, Q2, ...). For multiple choice `a` is the 0-based option index (A=0, B=1, ...). Replace the PDF with `POST /api/parent/worksheets/:id/pdf`; remove with `DELETE /api/parent/worksheets/:id`.
 
 ## Kid side
-A worksheet with `week` > 0 is the week's **Match** slot: it can only be handed in or started on screen once that slot is open or missed (never ahead of its day), see [sessions-and-missions.md](sessions-and-missions.md). On-screen play is `POST /api/session/start` with `{ slot: "match", week }`; the server picks the week's newest worksheet. Repeat paper submissions stay allowed but do not count as the mission again. Week-0 worksheets are ungated.
+A worksheet with `week` > 0 is the week's **Match** slot: it can only be handed in or started on screen once that slot is open or missed (never ahead of its day), see [sessions-and-missions.md](sessions-and-missions.md). On-screen play is `POST /api/session/start` with `{ slot: "match", week }`; the server picks the week's newest worksheet. A worksheet is handed in once; week-0 worksheets have no slot and are ungated for paper hand-in.
 
 - `GET /api/worksheets` list, `GET /api/worksheets/:id` questions (no answers), `GET /api/worksheets/:id/pdf` download.
-- **OMR submit:** `POST /api/worksheets/:id/submit` with `{ answers: { "<question_id>": "1", "<question_id>": "" }, minutes: 12 }`. Blank = skipped. Creates a `paper` session, marks it, awards runs and badges, and returns the review. Repeats are allowed: only the most recent finished attempt of a worksheet counts towards runs, totals and the daily score; time spent counts for every attempt, on screen or paper.
+- **Playing on screen / paper:** `POST /api/session/start` with `{ slot: "match", week }` returns every question, the saved `draft` and `session.worksheet_id`. Start again (another device, closed tab) and the same session comes back with the **original `started_at`** and the draft; a worksheet clock never restarts. Nothing is graded while playing: `/session/:id/answer` and `/session/:id/finish` refuse worksheet sessions.
+- **Draft:** `PUT /api/session/:id/draft` with `{ answers: { "<question_id>": "..." } }` replaces the saved answers (they can change until hand-in). Answers for questions outside the worksheet are ignored.
+- **Hand in:** `POST /api/worksheets/:id/submit` with `{ session_id, answers: { "<question_id>": "1", "<question_id>": "" } }`. Blank = skipped. It marks everything together, pays runs and the daily bonus, awards badges, deletes the draft and returns the review plus `totals` and the stadium stage before and after. Duration is the time since the session started (capped at 240 minutes). Without `session_id` it creates a `paper` session from the typed `minutes` (kept for the skill and the API).
+- **One attempt only:** a worksheet can be handed in once. A second submit or a new start returns 409. To run a sheet again the parent uploads it again; wrong and skipped answers come back through Replay.
 
 ## What is recorded
 - `attempts.skipped = 1` for blank answers and for questions never reached when an innings finishes.
@@ -24,5 +27,6 @@ A worksheet with `week` > 0 is the week's **Match** slot: it can only be handed 
 
 ## Notes
 - The PDF lives in D1 as base64 (no R2 bucket). Keep it under ~1.3 MB.
-- Existing databases need `ALTER TABLE` for the new columns (`questions.worksheet_id`, `sessions.source/worksheet_id`, `attempts.skipped`) and the two new tables; a fresh `db:init:remote` has them already.
+- Existing databases need `ALTER TABLE` for the new columns (`questions.worksheet_id`, `sessions.source/worksheet_id`, `attempts.skipped`) and the new tables (`worksheets`, `worksheet_files`, and `worksheet_drafts` via `migrations/2026-11-worksheet-drafts.sql`); a fresh `db:init:remote` has them already.
 - There is no UI yet for these endpoints; the skill and the API are the way in for now.
+- Code: `lib/api/worksheets.js` (upload, list, PDF), `lib/api/worksheet-play.js` (draft, resume, hand-in), `lib/api/finish.js` (shared end of an innings).

@@ -32,6 +32,13 @@ CREATE TABLE IF NOT EXISTS worksheets (
 );
 CREATE INDEX IF NOT EXISTS idx_w_date ON worksheets(set_date, active);
 
+-- Answers a kid has typed into an unfinished worksheet session (any device can pick it up). Deleted when the worksheet is submitted.
+CREATE TABLE IF NOT EXISTS worksheet_drafts (
+  session_id INTEGER PRIMARY KEY,
+  answers    TEXT    NOT NULL,                    -- JSON { "<question_id>": "<answer or option index>" }
+  updated_at TEXT    NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS worksheet_files (
   worksheet_id INTEGER PRIMARY KEY,
   pdf_base64   TEXT NOT NULL                      -- kept in D1 (row limit 2 MB), so no R2 bucket is needed
