@@ -6,3 +6,4 @@ test/local.sqlite
 test-results/
 playwright-report/
 public/assets/*.png
+data/drafts
