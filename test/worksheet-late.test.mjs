@@ -35,16 +35,20 @@ const start = (await call('kid', 'POST', '/api/session/start', { week: 3, slot: 
 assert.equal(start.session.mode, 'paper'); assert.equal(start.session.time_limit_min, 30); assert.ok(start.session.now);
 assert.equal(env.DB.db.prepare('SELECT source FROM sessions WHERE id=?').get(start.session.id).source, 'paper');
 assert.equal((await call('kid', 'GET', '/api/worksheets')).data[0].in_progress, true);
-const resumed = (await call('kid', 'POST', '/api/session/start', { week: 3, slot: 'match' })).data;
+const again = { week: 3, slot: 'match' };
+const resumed = (await call('kid', 'POST', '/api/session/start', again)).data;
 assert.equal(resumed.session.time_limit_min, 30, 'resume carries the limit');
 
 // 40 minutes after starting is late: nothing is paid, no badge, the day is not a streak day, the review still comes back
 env.DB.exec(`UPDATE sessions SET started_at = strftime('%Y-%m-%dT%H:%M:%fZ', started_at, '-40 minutes') WHERE id=${start.session.id}`);
 const [q1, q2] = start.questions;
 const late = (await call('kid', 'POST', `/api/worksheets/${sheet.id}/submit`, { session_id: start.session.id, answers: { [q1.id]: '4', [q2.id]: '7' } })).data;
-assert.equal(late.late, true); assert.equal(late.runs, 0); assert.equal(late.score, 2); assert.equal(late.review.length, 2);
+assert.equal(late.late, true); assert.equal(late.runs, 0);
+assert.equal(late.score, 2); assert.equal(late.review.length, 2);
 assert.deepEqual(late.newBadges, []); assert.equal(late.bonus.runs, 0);
 const row = env.DB.db.prepare('SELECT late, runs, duration_s FROM sessions WHERE id=?').get(start.session.id);
+assert.equal((await call('parent', 'GET', '/api/parent/sessions')).data.find((x) => x.id === start.session.id).late, 1);
+assert.equal((await call('kid', 'GET', '/api/worksheets')).data.find((x) => x.id === sheet.id).late, true);
 assert.equal(row.late, 1); assert.equal(row.runs, 0); assert.equal(row.duration_s, 30 * 60, 'duration is capped at the limit');
 const st = (await call('kid', 'GET', '/api/state')).data;
 assert.equal(st.totals.runs, 0); assert.equal(st.streak, 0); assert.equal(st.regularity.nextBonus, 1, 'today is still unplayed for the streak');

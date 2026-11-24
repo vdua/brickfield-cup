@@ -2,6 +2,8 @@ import { api, esc, fmtDur, fmtWhen, istDate } from '/js/common.js';
 import { main, KIND, MISTAKE, pct, level, renderTabs } from './state.js';
 
 // ---------------- activity ----------------
+// where and how a session was played: paper sheets and late worksheets stand out in the lists
+export const playedTag = (s) => `${s.source === 'paper' ? ' <span class="pill">Paper</span>' : ''}${s.late ? ' <span class="pill bad">Late</span>' : ''}`;
 const EVT = {
 	login: (d) => `Logged in (${d === 'parent' ? 'parent' : 'player'})`,
 	login_fail: (d) => `Wrong PIN tried (${d})`,
@@ -35,7 +37,7 @@ export async function sessions(id) {
 	const list = await api('/parent/sessions?limit=200');
 	main.innerHTML = `<section class="card"><h2>All sessions</h2><p class="sub">Tap a row to see every question, his answer and how long it took.</p>
   <div class="scroll"><table class="stackt"><thead><tr><th>When</th><th>Type</th><th class="num">Week</th><th class="num">Score</th><th class="num">Runs/W</th><th class="num">Time</th><th class="num">Away</th></tr></thead><tbody>
-  ${list.map((s) => `<tr style="cursor:pointer" data-id="${s.id}"><td data-l="When">${fmtWhen(s.started_at)}${s.ended_at ? '' : ' <span class="pill bad">not finished</span>'}</td><td data-l="Type">${KIND[s.kind] || s.kind}</td><td class="num" data-l="Week">${s.week}</td>
+  ${list.map((s) => `<tr style="cursor:pointer" data-id="${s.id}"><td data-l="When">${fmtWhen(s.started_at)}${s.ended_at ? '' : ' <span class="pill bad">not finished</span>'}</td><td data-l="Type">${KIND[s.kind] || s.kind}${playedTag(s)}</td><td class="num" data-l="Week">${s.week}</td>
     <td class="num" data-l="Score"><span class="pill ${level(pct(s.score, s.total))}">${s.score}/${s.total}</span></td><td class="num" data-l="Runs">${s.runs}/${s.wickets}</td><td class="num" data-l="Time">${s.ended_at ? fmtDur(s.duration_s) : ''}</td>
     <td class="num" data-l="Away">${s.away_count ? `${s.away_count}× · ${fmtDur(s.away_s)}` : ''}</td></tr>`).join('') || `<tr><td colspan="7" class="empty">No sessions yet.</td></tr>`}</tbody></table></div></section>`;
 	main.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => { window.location.hash = `sessions/${tr.dataset.id}`; }));
@@ -44,7 +46,7 @@ async function sessionDetail(id) {
 	const d = await api(`/parent/sessions/${id}`);
 	const s = d.session;
 	main.innerHTML = `<p><a href="#sessions">← All sessions</a></p>
-  <section class="card"><h2>${KIND[s.kind] || s.kind} · Week ${s.week}</h2>
+  <section class="card"><h2>${KIND[s.kind] || s.kind} · Week ${s.week}${playedTag(s)}</h2>
   <p class="sub">${fmtWhen(s.started_at)} · ${s.ended_at ? fmtDur(s.duration_s) : 'not finished'} · ${s.score}/${s.total} correct · ${s.runs} runs${s.away_count ? ` · switched away ${s.away_count}× (${fmtDur(s.away_s)})` : ''}</p>
   <div class="scroll"><table class="stackt"><thead><tr><th>#</th><th>Question</th><th>His answer</th><th>Correct</th><th class="num">Time</th><th>Why missed</th></tr></thead><tbody>
   ${d.attempts.map((a, i) => `<tr><td data-l="#">${i + 1}</td><td data-l="Question">${esc(a.prompt)}<br><small style="color:var(--muted)">${esc(a.topic)} · difficulty ${a.difficulty}</small></td>
