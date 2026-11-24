@@ -30,5 +30,5 @@ A worksheet with `week` > 0 is the week's **Match** slot: it can only be handed 
 ## Notes
 - The PDF lives in D1 as base64 (no R2 bucket). Keep it under ~1.3 MB.
 - Existing databases need `ALTER TABLE` for the new columns (`questions.worksheet_id`, `sessions.source/worksheet_id`, `attempts.skipped`) and the new tables (`worksheets`, `worksheet_files`, and `worksheet_drafts` via `migrations/2026-11-worksheet-drafts.sql`); `migrations/2026-11-worksheet-timer.sql` adds `worksheets.mode`, `worksheets.time_limit_min` and `sessions.late`; a fresh `db:init:remote` has them already.
-- There is no UI yet for these endpoints; the skill and the API are the way in for now.
+- UI: kid screens in `public/js/kid/sheets.js`, `sheet-play.js`, `sheet-omr.js`, `sheet-review.js` (`#sheets`, `#play/worksheet/match/<week>`); parent tabs **Daily** and **Worksheets** in `public/js/parent/` (list, replace PDF, delete, paper and late marks in Sessions). Uploading a worksheet is still API or skill only.
 - Code: `lib/api/worksheets.js` (upload, list, PDF), `lib/api/worksheet-play.js` (draft, resume, hand-in), `lib/api/finish.js` (shared end of an innings).

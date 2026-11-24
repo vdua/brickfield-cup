@@ -3,6 +3,8 @@ import { main } from './parent/state.js';
 import { overview } from './parent/overview.js';
 import { activity, sessions, errors } from './parent/history.js';
 import { plan } from './parent/plan.js';
+import { daily } from './parent/daily.js';
+import { worksheets } from './parent/worksheets.js';
 import { calendar } from './parent/calendar.js';
 import { questions } from './parent/questions.js';
 import { family, settings } from './parent/family.js';
@@ -13,6 +15,8 @@ async function route() {
 	main.innerHTML = `<p class="empty">Loading…</p>`;
 	try {
 		if (name === 'activity') await activity();
+		else if (name === 'daily') await daily();
+		else if (name === 'worksheets') await worksheets();
 		else if (name === 'sessions') await sessions(arg);
 		else if (name === 'errors') await errors();
 		else if (name === 'plan') await plan(arg);
