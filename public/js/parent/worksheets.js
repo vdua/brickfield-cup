@@ -25,7 +25,7 @@ const how = (w) => {
 // Week and date can move only while nothing has been started on it (an open clock or draft must stay in its slot).
 const setFor = (w) => {
 	if (w.done_session || w.in_progress) return dayText(w.set_date);
-	return `<form class="howf" data-when="${w.id}"><input name="week" type="number" min="0" max="19" value="${w.week}" aria-label="Week (0 for free practice)" style="width:56px">
+	return `<form class="howf" data-when="${w.id}"><input name="week" type="number" min="1" max="19" value="${w.week || ''}" aria-label="Week" style="width:56px">
       <input name="set_date" type="date" value="${w.set_date}" aria-label="Set for" style="width:140px"><button class="btn sm light" type="submit">Save</button></form>`;
 };
 
@@ -44,7 +44,7 @@ export async function worksheets() {
 	main.innerHTML = `${formHtml()}<section class="card"><h2>Worksheets</h2>
     <p class="sub">Add a worksheet from the skill's JSON file and its PDF. You can change the mode, clock and runs until it is handed in, move its week and date until he starts it, swap the printable PDF or remove a worksheet. Removing hides it from him; sessions already played stay in the history.</p>
     <div class="scroll"><table class="stackt"><thead><tr><th>Worksheet</th><th>Set for</th><th>How</th><th class="num">Questions</th><th>PDF</th><th>Result</th><th></th></tr></thead><tbody>
-    ${list.map((w) => `<tr><td data-l="Worksheet"><b>${esc(w.title)}</b><br><small>${w.week ? `Week ${w.week}` : 'Free practice'}</small></td><td data-l="Set for">${setFor(w)}</td>
+    ${list.map((w) => `<tr><td data-l="Worksheet"><b>${esc(w.title)}</b><br><small>${w.week ? `Week ${w.week}` : 'No week'}</small></td><td data-l="Set for">${setFor(w)}</td>
       <td data-l="How">${how(w)}</td>
       <td class="num" data-l="Questions">${w.questions}</td><td data-l="PDF">${w.has_pdf ? 'Yes' : '<span class="pill bad">None</span>'}</td><td data-l="Result">${status(w)}</td>
       <td><label class="btn sm light" style="cursor:pointer">${w.has_pdf ? 'Replace PDF' : 'Add PDF'}<input type="file" accept="application/pdf" data-pdf="${w.id}" hidden></label>

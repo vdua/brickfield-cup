@@ -33,7 +33,7 @@ function rowHtml(w) {
 	const done = !!w.done_session;
 	return `<div class="sheet ${done ? 'done' : ''}">
     <div><b>${esc(w.title)}</b>
-      <small>${dayText(w.set_date)} · ${w.week ? `Week ${w.week}` : 'Free practice'} · ${w.questions} questions</small>
+      <small>${dayText(w.set_date)} · Week ${w.week} · ${w.questions} questions</small>
       ${done ? `<small>Handed in · score ${w.score}/${w.total}</small>` : ''}</div>
     <div class="acts">
       ${w.has_pdf ? `<a class="brick ghost" href="/api/worksheets/${w.id}/pdf" target="_blank" rel="noopener">PDF</a>` : ''}

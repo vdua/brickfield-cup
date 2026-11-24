@@ -57,7 +57,8 @@ assert.equal((await call('kid', 'POST', `/api/worksheets/${up.id}/submit`, { min
 assert.equal((await call('kid', 'POST', '/api/session/start', { week: 3, slot: 'match' })).status, 409, 'the Match slot is closed once handed in');
 
 // a session from another worksheet cannot be handed in here
-const other = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'Free', set_date: today, week: 0, questions })).data;
+const other = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'W4', set_date: today, week: 4, questions })).data;
+await call('parent', 'POST', '/api/parent/plan/4/publish', { days: { match: today } });
 assert.equal((await call('kid', 'POST', `/api/worksheets/${other.id}/submit`, { session_id: sid, answers: {} })).status, 404);
 // a worksheet without a session (paper) still works, once, with the typed minutes
 const paper = await call('kid', 'POST', `/api/worksheets/${other.id}/submit`, { minutes: 10, answers: {} });
@@ -68,7 +69,8 @@ const replay = await call('kid', 'POST', '/api/session/start', { kind: 'revision
 assert.equal(replay.status, 200); assert.ok(replay.data.questions.some((q) => q.id === q3.id), 'skipped worksheet question comes back in Replay');
 
 // mode and clock can be changed until the worksheet is handed in
-const sh = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'Edit me', set_date: today, week: 0, questions, mode: 'screen', time_limit_min: 20 })).data;
+const sh = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'Edit me', set_date: today, week: 5, questions, mode: 'screen', time_limit_min: 20 })).data;
+await call('parent', 'POST', '/api/parent/plan/5/publish', { days: { match: today } });
 const edit = (b) => call('parent', 'PUT', `/api/parent/worksheets/${sh.id}`, b);
 const row = () => env.DB.db.prepare('SELECT mode, time_limit_min FROM worksheets WHERE id=?').get(sh.id);
 assert.equal((await edit({ mode: 'paper' })).status, 200); assert.deepEqual({ ...row() }, { mode: 'paper', time_limit_min: 20 }, 'only what is sent changes');
@@ -78,4 +80,8 @@ assert.equal((await call('parent', 'PUT', '/api/parent/worksheets/99999', { mode
 assert.equal((await call('kid', 'PUT', `/api/parent/worksheets/${sh.id}`, { mode: 'screen' })).status, 403, 'parents only');
 assert.equal((await call('kid', 'POST', `/api/worksheets/${sh.id}/submit`, { minutes: 5, answers: {} })).status, 200);
 assert.equal((await edit({ mode: 'screen' })).status, 409, 'locked once handed in'); assert.equal(row().mode, 'paper');
+// every worksheet belongs to a week from 1 to 19
+for (const week of [undefined, 0, -1, 1.5, 20, 'x']) {
+	assert.equal((await call('parent', 'POST', '/api/parent/worksheets', { title: 'Bad week', set_date: today, week, questions })).status, 400, `week ${week} refused`);
+}
 console.log('ALL WORKSHEET TESTS PASSED');

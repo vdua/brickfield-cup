@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Markdown mock paper (+ optional PDF) -> worksheet upload JSON, with the structural checks.
 
-usage: parse_paper.py PAPER.md OUT.json [--pdf PAPER.pdf] [--time MIN] [--mode screen|paper] [--week N] [--date YYYY-MM-DD]
+usage: parse_paper.py PAPER.md OUT.json [--pdf PAPER.pdf] [--time MIN] [--mode screen|paper] --week N [--date YYYY-MM-DD]
 
 Prints a report. Exit code 1 when a check fails (the JSON is still written so it can be inspected).
 Stdlib only; the PDF check needs `pdftotext` (poppler) and is skipped with a warning when it is missing.
@@ -106,7 +106,7 @@ def main():
     ap.add_argument('--pdf')
     ap.add_argument('--time', type=int)
     ap.add_argument('--mode', default='screen', choices=['screen', 'paper'])
-    ap.add_argument('--week', type=int, default=None)
+    ap.add_argument('--week', type=int, required=True, choices=range(1, 20), metavar='1-19')
     ap.add_argument('--date', default=None)
     args = ap.parse_args()
     header, qs, key = read_paper(open(args.md, encoding='utf8').read())
