@@ -66,4 +66,16 @@ assert.equal((await call('parent', 'GET', `/api/parent/sessions/${paper.data.ses
 // Replay picks the skipped question of a handed-in worksheet
 const replay = await call('kid', 'POST', '/api/session/start', { kind: 'revision' });
 assert.equal(replay.status, 200); assert.ok(replay.data.questions.some((q) => q.id === q3.id), 'skipped worksheet question comes back in Replay');
+
+// mode and clock can be changed until the worksheet is handed in
+const sh = (await call('parent', 'POST', '/api/parent/worksheets', { title: 'Edit me', set_date: today, week: 0, questions, mode: 'screen', time_limit_min: 20 })).data;
+const edit = (b) => call('parent', 'PUT', `/api/parent/worksheets/${sh.id}`, b);
+const row = () => env.DB.db.prepare('SELECT mode, time_limit_min FROM worksheets WHERE id=?').get(sh.id);
+assert.equal((await edit({ mode: 'paper' })).status, 200); assert.deepEqual({ ...row() }, { mode: 'paper', time_limit_min: 20 }, 'only what is sent changes');
+assert.equal((await edit({ time_limit_min: null })).status, 200); assert.deepEqual({ ...row() }, { mode: 'paper', time_limit_min: null }, 'null removes the clock');
+assert.equal((await edit({ mode: 'phone' })).status, 400); assert.equal((await edit({ time_limit_min: 0 })).status, 400); assert.equal((await edit({ time_limit_min: 241 })).status, 400);
+assert.equal((await call('parent', 'PUT', '/api/parent/worksheets/99999', { mode: 'paper' })).status, 404);
+assert.equal((await call('kid', 'PUT', `/api/parent/worksheets/${sh.id}`, { mode: 'screen' })).status, 403, 'parents only');
+assert.equal((await call('kid', 'POST', `/api/worksheets/${sh.id}/submit`, { minutes: 5, answers: {} })).status, 200);
+assert.equal((await edit({ mode: 'screen' })).status, 409, 'locked once handed in'); assert.equal(row().mode, 'paper');
 console.log('ALL WORKSHEET TESTS PASSED');

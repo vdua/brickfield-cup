@@ -10,7 +10,7 @@
   "questions": [ { "q": "2+2?", "a": "4", "t": "Add", "d": 1, "m": "worked solution" },
                  { "q": "Pick even", "o": ["3","4","5"], "a": "1" } ] }
 ```
-`mode` is `screen` (default: played on screen) or `paper` (printed; the kid fills an OMR-style answer grid). `time_limit_min` (1 to 240, optional) is the clock: no limit means no clock. Question order = number on the sheet (Q1, Q2, ...). For multiple choice `a` is the 0-based option index (A=0, B=1, ...). Replace the PDF with `POST /api/parent/worksheets/:id/pdf`; remove with `DELETE /api/parent/worksheets/:id`.
+`mode` is `screen` (default: played on screen) or `paper` (printed; the kid fills an OMR-style answer grid). `time_limit_min` (1 to 240, optional) is the clock: no limit means no clock. Question order = number on the sheet (Q1, Q2, ...). For multiple choice `a` is the 0-based option index (A=0, B=1, ...). Change either later with `PUT /api/parent/worksheets/:id` `{ mode?, time_limit_min? }` (`null` removes the clock; 409 once it is handed in; a sitting already open follows the new settings when reopened, and the server uses the new limit to decide lateness). Replace the PDF with `POST /api/parent/worksheets/:id/pdf`; remove with `DELETE /api/parent/worksheets/:id`.
 
 ## Kid side
 A worksheet with `week` > 0 is the week's **Match** slot: it can only be handed in or started on screen once that slot is open or missed (never ahead of its day), see [sessions-and-missions.md](sessions-and-missions.md). On-screen play is `POST /api/session/start` with `{ slot: "match", week }`; the server picks the week's newest worksheet. A worksheet is handed in once; week-0 worksheets have no slot and are ungated for paper hand-in.
