@@ -12,5 +12,6 @@
 | [docs/scoring-and-regularity.md](scoring-and-regularity.md) | Runs per answer, regularity bonus, wicket resets, rest days and holidays, next-week maximum |
 | [migrations/](../migrations/) | One-off SQL to bring an existing D1 up to date; run before deploying the matching code |
 | [.claude/skills/weekly-content/SKILL.md](../.claude/skills/weekly-content/SKILL.md) | Skill that drafts a week of questions, concept cards and parent guide from book material |
+| [.claude/skills/worksheet-from-markdown/SKILL.md](../.claude/skills/worksheet-from-markdown/SKILL.md) | Skill that turns a markdown mock paper + PDF into the worksheet upload JSON, checks it, and can upload it |
 
 Add new docs under `docs/` and list them here.

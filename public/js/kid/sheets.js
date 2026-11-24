@@ -37,7 +37,7 @@ function rowHtml(w) {
       ${done ? `<small>Handed in · score ${w.score}/${w.total}</small>` : ''}</div>
     <div class="acts">
       ${w.has_pdf ? `<a class="brick ghost" href="/api/worksheets/${w.id}/pdf" target="_blank" rel="noopener">PDF</a>` : ''}
-      ${!done && w.week ? `<button class="brick green" type="button" data-play="${w.week}">Play on screen</button>` : ''}
+      ${!done && w.week ? `<button class="brick green" type="button" data-play="${w.week}">${w.mode === 'paper' ? 'Fill answer grid' : 'Play on screen'}</button>` : ''}
       ${done ? '<span class="chip pace1">Done</span>' : ''}
     </div></div>`;
 }

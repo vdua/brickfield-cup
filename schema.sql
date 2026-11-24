@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS worksheets (
   active     INTEGER NOT NULL DEFAULT 1,
   mode       TEXT    NOT NULL DEFAULT 'screen',   -- screen: played on screen | paper: printed, answers entered in the OMR grid
   time_limit_min INTEGER,                         -- NULL: no clock; otherwise hand in within this many minutes of starting
+  runs_table TEXT,                                -- JSON { "1":2, "2":4, "3":6 } runs per correct answer by difficulty; NULL: use the global table
   created_at TEXT    NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_w_date ON worksheets(set_date, active);

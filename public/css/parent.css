@@ -108,3 +108,13 @@ details.guide-done { margin-top: 12px; } details.guide-done > summary { font-wei
 .howf { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .howf select, .howf input { border: 1px solid #ced4da; border-radius: 8px; padding: 6px 8px; min-height: 36px; background: #fff; }
 .howf input { width: 82px; }
+.addf { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 14px; margin-top: 12px; }
+.addf label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #495057; }
+.addf input, .addf select { border: 1px solid #ced4da; border-radius: 8px; padding: 6px 8px; min-height: 36px; background: #fff; font-size: 14px; }
+.addf fieldset { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px; border: 1px solid #dee2e6; border-radius: 8px; }
+.addf fieldset legend { font-size: 13px; color: #495057; padding: 0 4px; }
+.addf fieldset label { width: 110px; }
+.addprev { grid-column: 1 / -1; font-size: 14px; }
+.addprev ul.bad { color: #c92a2a; margin: 4px 0 0; padding-left: 18px; }
+.addf button, .addprev { grid-column: 1 / -1; }
+.addf button { justify-self: start; }
