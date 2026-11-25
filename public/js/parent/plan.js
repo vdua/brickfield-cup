@@ -1,6 +1,6 @@
 // "Week plan": publish a week once, then each mission opens on its day. Dates can be changed, and Nets or Spin puzzles added or removed, before or after publishing.
 import { api, esc, toast } from '/js/common.js';
-import { main, ctx, renderTabs } from './state.js';
+import { main, renderTabs } from './state.js';
 
 const STATUS = {
 	unpublished: ['Not published', ''],
@@ -14,9 +14,9 @@ const STATUS = {
 
 export async function plan(arg) {
 	renderTabs('plan');
-	if (!ctx.OV) ctx.OV = await api('/parent/overview');
-	const week = Math.max(1, Math.min(19, Number(arg) || ctx.OV.week));
-	const w = await api(`/parent/plan/${week}`);
+	const asked = Number(arg) ? Math.max(1, Math.min(19, Number(arg))) : 0; // 0 = the current week
+	const w = await api(`/parent/plan/${asked}`);
+	const { week } = w;
 	const row = (x) => {
 		const [text, cls] = x.late && x.status === 'done' ? ['Done late (mission failed)', 'bad'] : STATUS[x.status];
 		return `<tr><td data-l="Mission"><b>${esc(x.label)}${x.num ? ` ${x.num}` : ''}</b><br><small>${esc(x.hint)}</small></td>
@@ -33,7 +33,7 @@ export async function plan(arg) {
 	};
 	main.innerHTML = `<section class="card" style="max-width:760px"><h2>Week plan</h2>
     <p class="sub">Publish a week once. Each mission then opens on its day: he can play today's, and catch up on missed ones (the mission counts as failed and the streak is lost), but never play ahead. He can play as many missions in a day as you schedule on it (at least one). Days that are rest days or holidays are skipped.</p>
-    <label class="field" style="max-width:260px">Week<select id="pw">${ctx.OV.tracker.map((t) => `<option value="${t.week}" ${t.week === week ? 'selected' : ''}>Week ${t.week}: ${esc(t.topic)}</option>`).join('')}</select></label>
+    <label class="field" style="max-width:260px">Week<select id="pw">${w.weeks.map((t) => `<option value="${t.week}" ${t.week === week ? 'selected' : ''}>Week ${t.week}: ${esc(t.topic)}</option>`).join('')}</select></label>
     <p class="sub" style="margin-top:12px">${w.published ? 'Published. Change a date and save to move a mission.' : 'Not published yet. He sees the week but cannot play any of it.'}</p>
     <form id="pf"><table><thead><tr><th>Mission</th><th>Day</th><th>Status</th><th></th></tr></thead><tbody>${w.slots.map(row).join('')}</tbody></table>
     <div style="margin-top:12px;display:flex;gap:8px"><button class="btn green" type="submit">${w.published ? 'Save dates' : 'Publish week'}</button>
