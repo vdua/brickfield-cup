@@ -126,4 +126,13 @@ await call('parent', 'POST', '/api/parent/settings', { rest_days: '' }); // no w
 	env.DB.exec(`DELETE FROM holidays WHERE day = '${far}'; DELETE FROM week_slots WHERE week = 19`);
 }
 
+{ // GET /plan/0 is the current week and carries the week picker, so the plan tab needs nothing else
+	const cur = (await call('parent', 'GET', '/api/parent/settings')).data.week;
+	const p0 = (await call('parent', 'GET', '/api/parent/plan/0')).data;
+	assert.equal(p0.week, cur);
+	assert.equal(p0.weeks.length, 19);
+	assert.deepEqual(p0.weeks[cur - 1], { week: cur, topic: p0.weeks[cur - 1].topic });
+	assert.equal((await call('parent', 'DELETE', '/api/parent/plan/0')).status, 400, 'week 0 only means "current" for a read');
+}
+
 console.log('ALL PLAN TESTS PASSED');

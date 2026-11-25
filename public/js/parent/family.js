@@ -28,15 +28,13 @@ export async function family() {
 // ---------------- settings ----------------
 export async function settings() {
 	renderTabs('settings');
-	if (!ctx.OV) ctx.OV = await api('/parent/overview');
-	const s = ctx.OV.settings;
-	const holidays = await api('/parent/holidays');
+	const [s, holidays] = await Promise.all([api('/parent/settings'), api('/parent/holidays')]); // s.week = the plan week right now
 	main.innerHTML = `<section class="card" style="max-width:640px"><h2>Settings</h2><p class="sub">The week moves on automatically every Monday from the start date. Set an override to hold or skip a week (0 = automatic).</p>
   <form id="sf" style="display:grid;gap:12px">
     <label class="field">His name (shown in the app)<input name="player_name" value="${esc(s.player_name)}"></label>
     <label class="field">Team name<input name="team_name" value="${esc(s.team_name)}"></label>
     <label class="field">Plan start date (a Monday)<input name="start_date" type="date" value="${esc(s.start_date)}"></label>
-    <label class="field">Week override (currently week ${ctx.OV.week})<input name="week_override" type="number" min="0" max="19" value="${esc(s.week_override)}"></label>
+    <label class="field">Week override (currently week ${s.week})<input name="week_override" type="number" min="0" max="19" value="${esc(s.week_override)}"></label>
     <label class="field">Daily goal, minutes<input name="daily_goal_min" type="number" min="5" max="180" value="${esc(s.daily_goal_min)}"></label>
     <label class="field">Weekly rest day (no play, streak safe)<select name="rest_days">${[['5', 'Friday'], ['6', 'Saturday'], ['0', 'Sunday'], ['', 'None']].map(([v, n]) => `<option value="${v}" ${String(s.rest_days ?? '5') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
     <div><button class="btn green" type="submit">Save</button></div>

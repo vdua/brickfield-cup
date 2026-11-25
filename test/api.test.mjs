@@ -210,6 +210,15 @@ assert.ok(ov.totals.bonus >= 1);
 	assert.ok(w2.weekMax.total.max > 0 && w2.weekMax.bonus.max >= w2.weekMax.bonus.banked);
 	assert.ok(w2.weekMax.parts.every((p) => p.max >= 0 && !('min' in p)));
 }
+{ // the overview parts the page loads tile by tile add up to the whole overview
+	const parts = Object.assign({}, ...await Promise.all(['core', 'streak', 'topics', 'week-max', 'badges'].map(async (n) => (await call('parent', 'GET', `/api/parent/overview/${n}`)).data)));
+	assert.deepEqual(parts, ov);
+	assert.equal((await call('parent', 'GET', '/api/parent/overview/nope')).status, 404);
+	assert.equal((await call('kid', 'GET', '/api/parent/overview/core')).status, 403);
+	const st = (await call('parent', 'GET', '/api/parent/settings')).data; // settings + the plan week they resolve to
+	assert.equal(st.week, ov.week);
+	assert.equal(st.player_name, ov.settings.player_name);
+}
 assert.ok(ov.tracker[0].before.total === 6);
 console.log('week1 tracker', ov.tracker[0], 'topics', ov.topics.length, 'daily', ov.daily.slice(-1)[0]);
 const errs = (await call('parent', 'GET', '/api/parent/errors')).data;
