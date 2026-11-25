@@ -215,9 +215,9 @@ assert.ok(ov.totals.bonus >= 1);
 	assert.deepEqual(parts, ov);
 	assert.equal((await call('parent', 'GET', '/api/parent/overview/nope')).status, 404);
 	assert.equal((await call('kid', 'GET', '/api/parent/overview/core')).status, 403);
-	const st = (await call('parent', 'GET', '/api/parent/settings')).data; // settings + the plan week they resolve to
-	assert.equal(st.week, ov.week);
-	assert.equal(st.player_name, ov.settings.player_name);
+	const cfg = (await call('parent', 'GET', '/api/parent/settings')).data; // settings + the plan week they resolve to
+	assert.equal(cfg.week, ov.week);
+	assert.equal(cfg.player_name, ov.settings.player_name);
 }
 assert.ok(ov.tracker[0].before.total === 6);
 console.log('week1 tracker', ov.tracker[0], 'topics', ov.topics.length, 'daily', ov.daily.slice(-1)[0]);
